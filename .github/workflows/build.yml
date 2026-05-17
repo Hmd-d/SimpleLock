@@ -25,10 +25,6 @@ jobs:
         with:
           gradle-version: '8.9'
 
-    - name: Create Dummy Properties File
-      run: touch local.defaults.properties
-
-
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.9 --distribution-type bin
 
