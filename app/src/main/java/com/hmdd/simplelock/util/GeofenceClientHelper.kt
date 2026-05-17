@@ -38,6 +38,10 @@ class GeofenceClientHelper(private val context: Context) {
             .setTransitionTypes(
                 Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT
             )
+            // Default batching window is ~2 minutes. 5s forces Play Services
+            // to report transitions much closer to real-time — paying battery
+            // for the responsiveness this app needs.
+            .setNotificationResponsiveness(5_000)
             .setLoiteringDelay(5_000)
             .build()
 

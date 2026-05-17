@@ -215,10 +215,13 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, KioskActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             })
+            // Make the service start aggressive polling — instant exit detection.
+            GeofenceForegroundService.notifyEnter(this)
         } else {
-            // Make sure any stale kiosk is released.
+            // Make sure any stale kiosk is released and the service is passive.
             val release = Intent(KioskActivity.ACTION_RELEASE).setPackage(packageName)
             sendBroadcast(release)
+            GeofenceForegroundService.notifyExit(this)
         }
         setVerifying(false)
     }

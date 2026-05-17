@@ -14,16 +14,10 @@ import com.hmdd.simplelock.util.GeofencePrefs
  * Receives both LOCKED_BOOT_COMPLETED (Direct Boot, fires before the user
  * unlocks the keyguard) and BOOT_COMPLETED (after unlock).
  *
- * The bet: if the device shut down while the user was INSIDE the boundary,
- * we must re-engage kiosk *immediately* on power-up — before there is any
- * window for the user to open the app and disable the system. We trust the
- * persisted `isInside` flag rather than waiting for a GPS fix. If it later
- * turns out we're actually outside, the Play Services geofence will fire an
- * EXIT and release the kiosk; in the meantime, the user is safely contained.
- *
- * The receiver is marked `directBootAware="true"` in the manifest and the
- * SharedPreferences live in device-protected storage so this all works
- * pre-unlock.
+ * If the device shut down while INSIDE, we re-engage kiosk *immediately* on
+ * power-up. We trust the persisted flag rather than waiting for GPS — if it
+ * turns out we're actually outside, the active polling started below will
+ * notice within a few seconds and release.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -38,8 +32,8 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        // Fail-safe: lock NOW based on last known state, don't wait for GPS.
-        if (GeofencePrefs.isInside(context)) {
+        val wasInside = GeofencePrefs.isInside(context)
+        if (wasInside) {
             Log.i(TAG, "Last known state was INSIDE — engaging kiosk instantly")
             val launch = Intent(context, KioskActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -47,11 +41,15 @@ class BootReceiver : BroadcastReceiver() {
             context.startActivity(launch)
         }
 
-        // After the user unlocks, re-arm the monitor. Foreground services
-        // and most Play Services calls require credential-encrypted storage,
-        // so this only runs on BOOT_COMPLETED, not LOCKED_BOOT_COMPLETED.
+        // Credential-encrypted storage and FusedLocationProvider both require
+        // post-unlock, so the foreground service only comes up on the second
+        // boot signal.
         if (action == Intent.ACTION_BOOT_COMPLETED) {
             GeofenceForegroundService.start(context)
+            if (wasInside) {
+                // Kick off active polling so an early exit is detected fast.
+                GeofenceForegroundService.notifyEnter(context)
+            }
         }
     }
 

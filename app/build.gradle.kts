@@ -12,9 +12,9 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Bumped for the Fail-Safe Lockdown update — installs in place over v1.0.0.
-        versionCode = 2
-        versionName = "1.1.0"
+        // Bumped for the active-polling responsiveness update.
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible

@@ -7,6 +7,7 @@ import android.util.Log
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 import com.hmdd.simplelock.KioskActivity
+import com.hmdd.simplelock.service.GeofenceForegroundService
 import com.hmdd.simplelock.util.GeofencePrefs
 
 class GeofenceBroadcastReceiver : BroadcastReceiver() {
@@ -34,6 +35,8 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         context.startActivity(launch)
+        // Flip the service into ACTIVE polling mode for instant exit detection.
+        GeofenceForegroundService.notifyEnter(context)
     }
 
     private fun exit(context: Context) {
@@ -44,6 +47,8 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
             setPackage(context.packageName)
         }
         context.sendBroadcast(release)
+        // Drop the service back to PASSIVE — saves battery once outside.
+        GeofenceForegroundService.notifyExit(context)
     }
 
     companion object { private const val TAG = "SimpleLockFence" }
