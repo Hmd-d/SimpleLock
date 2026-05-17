@@ -33,7 +33,7 @@ jobs:
           MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
         run: |
           if [ -n "$MAPS_API_KEY" ]; then
-            echo "MAPS_API_KEY=$MAPS_API_KEY" > app/secrets.properties
+            echo "MAPS_API_KEY=$MAPS_API_KEY" > secrets.properties
           fi
 
       - name: Build debug APK
