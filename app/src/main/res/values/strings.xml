@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SimpleLock</string>
+    <string name="subtitle">Geofenced kiosk lockdown</string>
+
+    <string name="btn_set_boundary">Set Geofence Boundary</string>
+    <string name="btn_toggle_on">Toggle Geo-Lock System: ON</string>
+    <string name="btn_toggle_off">Toggle Geo-Lock System: OFF</string>
+    <string name="btn_save_boundary">Save Boundary</string>
+
+    <string name="status_owner_yes">Device Owner: granted ✓</string>
+    <string name="status_owner_no">Device Owner: NOT granted — see README</string>
+    <string name="status_boundary_unset">Boundary: not set</string>
+    <string name="status_boundary_set">Boundary: %1$.5f, %2$.5f (r=%3$.0f m)</string>
+
+    <string name="permissions_required">All location permissions are required.</string>
+    <string name="toast_no_boundary">Set a boundary first.</string>
+    <string name="toast_not_owner">App is not Device Owner — see README.</string>
+    <string name="toast_enabled">Geo-Lock system enabled.</string>
+    <string name="toast_disabled">Geo-Lock system disabled.</string>
+    <string name="toast_tap_map_first">Tap the map to choose a center.</string>
+    <string name="toast_boundary_saved">Boundary saved.</string>
+
+    <string name="boundary_center">Boundary center</string>
+    <string name="radius_default">Radius: 100 m</string>
+    <string name="radius_format">Radius: %1$d m</string>
+
+    <string name="notif_title">SimpleLock active</string>
+    <string name="notif_text">Monitoring boundary</string>
+
+    <string name="kiosk_message">Inside boundary — device locked\n\nCalls and notifications remain available</string>
+
+    <string name="device_admin_label">SimpleLock Device Admin</string>
+    <string name="device_admin_description">Required for kiosk-mode geofenced lockdown</string>
+</resources>
