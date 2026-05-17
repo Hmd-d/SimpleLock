@@ -12,13 +12,31 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        // Bumped for the Fail-Safe Lockdown update — installs in place over v1.0.0.
+        versionCode = 2
+        versionName = "1.1.0"
+    }
+
+    // Stable debug signing config so every CI build is update-compatible
+    // with the previously installed APK. The keystore is checked in
+    // (debug only, password "android") so the signature never changes.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
+            // For now release uses the same key so adb install -r works either way.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

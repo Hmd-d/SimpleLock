@@ -42,9 +42,11 @@ captures/
 *.iml
 .idea/
 
-# Keystore files
+# Keystore files — but keep the stable debug keystore committed so
+# every CI build is update-compatible with the previously installed APK.
 *.jks
 *.keystore
+!debug.keystore
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

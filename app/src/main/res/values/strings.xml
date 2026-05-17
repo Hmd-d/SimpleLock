@@ -20,6 +20,11 @@
     <string name="toast_disabled">Geo-Lock system disabled.</string>
     <string name="toast_tap_map_first">Tap the map to choose a center.</string>
     <string name="toast_boundary_saved">Boundary saved.</string>
+    <string name="toast_disable_first">Disable the system before changing the boundary.</string>
+    <string name="toast_must_be_outside">You can only disable the system while outside the boundary.</string>
+    <string name="toast_no_fix">Could not get a location fix. Try again.</string>
+    <string name="toast_location_failed">Location check failed: %1$s</string>
+    <string name="verifying_location">Verifying location…</string>
 
     <string name="boundary_center">Boundary center</string>
     <string name="radius_default">Radius: 100 m</string>

@@ -58,6 +58,7 @@
             android:exported="true"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
+            android:directBootAware="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:lockTaskMode="if_whitelisted"
@@ -89,10 +90,12 @@
             android:name=".receiver.GeofenceBroadcastReceiver"
             android:exported="true" />
 
-        <!-- Survive reboot -->
+        <!-- Survive reboot — directBootAware so we can re-engage kiosk before
+             the user unlocks the device on power-up. -->
         <receiver
             android:name=".receiver.BootReceiver"
-            android:exported="true">
+            android:exported="true"
+            android:directBootAware="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />

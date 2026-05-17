@@ -30,6 +30,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <TextView
+        android:id="@+id/tv_verifying"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/verifying_location"
+        android:textSize="14sp"
+        android:textStyle="italic"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/tv_subtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_set_boundary"
         android:layout_width="0dp"
@@ -37,7 +51,7 @@
         android:text="@string/btn_set_boundary"
         android:textSize="16sp"
         android:layout_marginTop="48dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_subtitle"
+        app:layout_constraintTop_toBottomOf="@id/tv_verifying"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
