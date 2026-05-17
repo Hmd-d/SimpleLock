@@ -32,6 +32,7 @@
 
     <string name="notif_title">SimpleLock active</string>
     <string name="notif_text">Monitoring boundary</string>
+    <string name="notif_text_active">Inside boundary — kiosk engaged</string>
 
     <string name="kiosk_message">Inside boundary — device locked\n\nCalls and notifications remain available</string>
 

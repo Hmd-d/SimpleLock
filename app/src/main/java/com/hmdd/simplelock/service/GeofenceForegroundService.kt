@@ -33,26 +33,32 @@ import com.hmdd.simplelock.util.LockManager
 /**
  * Background brain.
  *
- * Two modes:
+ * Two top-level modes:
  *
- *   PASSIVE (default, while unlocked / outside)
+ *   PASSIVE (default, while unlocked / outside the boundary)
  *     - Holds the registered Play Services geofence.
- *     - Almost zero battery — Play Services batches transitions for us.
+ *     - Near-zero battery cost — Play Services batches transitions for us.
  *
- *   ACTIVE (while locked / inside)
- *     - Adds an aggressive FusedLocationProvider stream at PRIORITY_HIGH_ACCURACY
- *       with 5s interval / 2s fastest. Every fix recomputes distance to the
- *       saved center. As soon as we are confidently outside the radius we
- *       release the kiosk and drop back to passive — without waiting for the
- *       batched geofence EXIT.
+ *   ACTIVE (while locked / inside the boundary)
+ *     - Adds a FusedLocationProvider stream at PRIORITY_HIGH_ACCURACY.
+ *     - Two sub-tiers, picked from each new fix's distance-to-edge:
+ *         FAST: interval 5s / min 2s — used in the outer ring near the edge
+ *               (≤ NEAR_BUFFER_M from boundary). Sub-10s exit detection.
+ *         SLOW: interval 30s / min 15s — used while well inside the boundary,
+ *               where exits are physically impossible in <30s. Saves battery
+ *               for the long stretches where the user is just sitting inside.
+ *     - When confidently outside (distance - reading.accuracy > radius), the
+ *       service releases the kiosk and drops back to PASSIVE.
  *
- * Entry-points (call from outside via the companion-object helpers):
- *   start(ctx)         -> service comes up in PASSIVE mode
- *   notifyEnter(ctx)   -> service flips to ACTIVE mode
- *   notifyExit(ctx)    -> service flips back to PASSIVE mode
- *   stop(ctx)          -> tears down both modes
+ * Mode transitions are driven by callers via the companion helpers:
+ *   start(ctx)         -> service comes up in PASSIVE
+ *   notifyEnter(ctx)   -> service flips to ACTIVE (initial tier = FAST)
+ *   notifyExit(ctx)    -> service flips back to PASSIVE
+ *   stop(ctx)          -> tears everything down
  */
 class GeofenceForegroundService : Service() {
+
+    private enum class PollTier { OFF, FAST, SLOW }
 
     private val helper by lazy { GeofenceClientHelper(this) }
     private val lockManager by lazy { LockManager(this) }
@@ -60,34 +66,43 @@ class GeofenceForegroundService : Service() {
         LocationServices.getFusedLocationProviderClient(this)
     }
 
-    @Volatile private var activePolling = false
+    @Volatile private var currentTier: PollTier = PollTier.OFF
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val loc = result.lastLocation ?: return
-            evaluateForExit(loc)
+            evaluateAndAdapt(loc)
         }
     }
 
     override fun onCreate() {
         super.onCreate()
-        startForegroundCompat()
+        // Come up foreground in PASSIVE-flavoured notification.
+        postNotification(active = false)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Always keep policies fresh (Device Owner config may have changed).
+        // Always keep policies fresh.
         lockManager.applyPolicies()
 
         when (intent?.action) {
-            ACTION_ENTER -> startActivePolling()
-            ACTION_EXIT -> stopActivePolling()
+            ACTION_ENTER -> {
+                postNotification(active = true)
+                // Start aggressive; the first fix will adapt down to SLOW if
+                // we're actually well inside.
+                setPollTier(PollTier.FAST)
+            }
+            ACTION_EXIT -> {
+                setPollTier(PollTier.OFF)
+                postNotification(active = false)
+            }
             else -> registerPassiveGeofence()
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        stopActivePolling()
+        setPollTier(PollTier.OFF)
         helper.unregister()
         super.onDestroy()
     }
@@ -95,7 +110,7 @@ class GeofenceForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     // ------------------------------------------------------------------
-    // PASSIVE mode
+    // PASSIVE
     // ------------------------------------------------------------------
 
     private fun registerPassiveGeofence() {
@@ -107,40 +122,56 @@ class GeofenceForegroundService : Service() {
     }
 
     // ------------------------------------------------------------------
-    // ACTIVE mode
+    // ACTIVE tiers
     // ------------------------------------------------------------------
 
     @SuppressLint("MissingPermission")
-    private fun startActivePolling() {
-        if (activePolling) return
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.w(TAG, "Cannot start active polling: fine-location permission missing")
+    private fun setPollTier(tier: PollTier) {
+        if (tier == currentTier) return
+
+        // Stopping is unconditional.
+        if (tier == PollTier.OFF) {
+            if (currentTier != PollTier.OFF) {
+                fused.removeLocationUpdates(locationCallback)
+            }
+            currentTier = PollTier.OFF
+            Log.i(TAG, "Polling -> OFF")
             return
         }
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5_000L)
-            .setMinUpdateIntervalMillis(2_000L)
+
+        // Switching tier requires permission to actually subscribe.
+        if (ContextCompat.checkSelfPermission(
+                this, Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Cannot poll: fine-location permission missing")
+            return
+        }
+
+        val (interval, fastest) = when (tier) {
+            PollTier.FAST -> 5_000L to 2_000L
+            PollTier.SLOW -> 30_000L to 15_000L
+            else -> error("unreachable")
+        }
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, interval)
+            .setMinUpdateIntervalMillis(fastest)
             .setWaitForAccurateLocation(false)
             .build()
-        fused.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
-        activePolling = true
-        Log.i(TAG, "Active polling ON (5s/2s @ HIGH_ACCURACY)")
-    }
 
-    private fun stopActivePolling() {
-        if (!activePolling) return
-        fused.removeLocationUpdates(locationCallback)
-        activePolling = false
-        Log.i(TAG, "Active polling OFF")
+        // Atomically swap streams: drop old, install new with the same callback.
+        if (currentTier != PollTier.OFF) {
+            fused.removeLocationUpdates(locationCallback)
+        }
+        fused.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
+        currentTier = tier
+        Log.i(TAG, "Polling -> $tier (interval=${interval}ms, fastest=${fastest}ms)")
     }
 
     /**
-     * Called for every fresh location while active. We use distance *minus
-     * the reading's own accuracy* to avoid releasing on a single noisy fix
-     * — i.e. only release when we are confidently outside the radius.
+     * Per-fix decision. Either pre-empt exit, or adapt the polling tier based
+     * on how close to the boundary edge we are right now.
      */
-    private fun evaluateForExit(loc: Location) {
+    private fun evaluateAndAdapt(loc: Location) {
         val boundary = GeofencePrefs.boundary(this) ?: return
         val out = FloatArray(1)
         Location.distanceBetween(
@@ -148,40 +179,57 @@ class GeofenceForegroundService : Service() {
             boundary.first, boundary.second,
             out
         )
-        val confidentDistance = out[0] - loc.accuracy
+        val distanceToCenter = out[0]
+        val distanceToEdge = boundary.third - distanceToCenter
+        // Subtract reading accuracy to avoid releasing on a single noisy fix.
+        val confidentDistance = distanceToCenter - loc.accuracy
+
         if (confidentDistance > boundary.third) {
-            Log.i(TAG, "Active polling detected EXIT (d=${out[0]}, acc=${loc.accuracy}, r=${boundary.third})")
+            Log.i(
+                TAG,
+                "EXIT detected by active polling " +
+                    "(d=$distanceToCenter, acc=${loc.accuracy}, r=${boundary.third})"
+            )
             handleActiveExit()
+            return
         }
+
+        // Still inside. Switch tier based on proximity to the edge.
+        val nextTier = if (distanceToEdge < NEAR_BUFFER_M) PollTier.FAST else PollTier.SLOW
+        setPollTier(nextTier)
     }
 
     private fun handleActiveExit() {
-        // Update state, release kiosk, drop back to passive. The passive
-        // geofence will eventually also fire EXIT but by then we're a no-op.
         GeofencePrefs.setInside(this, false)
         sendBroadcast(Intent(KioskActivity.ACTION_RELEASE).setPackage(packageName))
-        stopActivePolling()
+        setPollTier(PollTier.OFF)
+        postNotification(active = false)
     }
 
     // ------------------------------------------------------------------
-    // Foreground notification
+    // Foreground notification (re-posted whenever mode changes)
     // ------------------------------------------------------------------
 
-    private fun startForegroundCompat() {
+    private fun postNotification(active: Boolean) {
         val tap = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+        val text = getString(
+            if (active) R.string.notif_text_active else R.string.notif_text
+        )
         val notif: Notification = NotificationCompat.Builder(this, SimpleLockApp.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_lock)
             .setContentTitle(getString(R.string.notif_title))
-            .setContentText(getString(R.string.notif_text))
+            .setContentText(text)
             .setContentIntent(tap)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()
 
+        // Safe to call startForeground multiple times on an already-foreground
+        // service — it just updates the notification.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
         } else {
@@ -194,6 +242,9 @@ class GeofenceForegroundService : Service() {
     companion object {
         private const val TAG = "SimpleLockSvc"
         private const val NOTIF_ID = 1001
+
+        /** Distance-to-edge threshold (m) below which we use FAST polling. */
+        private const val NEAR_BUFFER_M = 30f
 
         const val ACTION_ENTER = "com.hmdd.simplelock.svc.ACTION_ENTER"
         const val ACTION_EXIT = "com.hmdd.simplelock.svc.ACTION_EXIT"

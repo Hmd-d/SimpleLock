@@ -40,11 +40,26 @@ class KioskActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityKioskBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+
+        // Wake the screen when this activity is launched (e.g. on geofence ENTER
+        // while the device is asleep) and let it render over the keyguard.
+        //
+        // FLAG_KEEP_SCREEN_ON deliberately removed — keeping the screen on
+        // forever inside the kiosk was the single biggest battery drain. The
+        // lock-task pin survives screen-off, and the user can wake the device
+        // normally to read notifications or answer calls. Manifest attributes
+        // (showWhenLocked / turnScreenOn) cover API 27+; the flag fallback
+        // below covers our minSdk=26.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-        )
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+            )
+        }
 
         ContextCompat.registerReceiver(
             this,

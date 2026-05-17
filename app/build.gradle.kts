@@ -12,9 +12,9 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Bumped for the active-polling responsiveness update.
-        versionCode = 3
-        versionName = "1.2.0"
+        // Bumped for adaptive polling + battery improvements.
+        versionCode = 4
+        versionName = "1.3.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible
