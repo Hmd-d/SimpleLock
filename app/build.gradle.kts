@@ -12,10 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Fix: surface the system Location dialog directly on top of the
-        // kiosk so an accidentally-disabled GPS no longer traps the user.
-        versionCode = 11
-        versionName = "1.6.2"
+        // Adds a system-brightness slider on MainActivity driven by Device
+        // Owner's setSystemSetting (no WRITE_SETTINGS user prompt).
+        versionCode = 12
+        versionName = "1.7.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible

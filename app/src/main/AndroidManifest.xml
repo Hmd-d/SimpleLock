@@ -20,6 +20,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Brightness control. Granted automatically because we are Device
+         Owner, which can also write system settings via
+         DevicePolicyManager.setSystemSetting(). Declared explicitly so the
+         fallback read path (Settings.System.getInt) also works. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Package visibility (Android 11+): we resolve launch intents for
          the user-exempted shortcut apps. -->
     <queries>

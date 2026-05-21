@@ -4,11 +4,11 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.6.2)
+## Architecture (v1.7.0)
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts: **Open Al Rajhi Retail**, **Open Phone**, **Open Contacts**, **Open Messages** |
+| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts: **Open Al Rajhi Retail**, **Open Phone**, **Open Contacts**, **Open Messages** + a system-brightness slider |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs |
 | UI | `KioskActivity` | The pinned surface, holds `startLockTask()` and the always-accessible **Check Location to Unlock** button |
 | Manifest | `KioskHomeAlias` | Disabled-by-default `<activity-alias>` carrying the HOME intent filter. `LockManager` flips it on when the kiosk takes over and off on release, so unlock hands HOME back to the system launcher |
@@ -74,6 +74,7 @@ Trimmed for the manual architecture — no background or boot permissions are re
 - `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_SPECIAL_USE` — for the kiosk notification
 - `POST_NOTIFICATIONS` — Android 13+
 - `INTERNET` + `ACCESS_NETWORK_STATE` — Google Maps
+- `WRITE_SETTINGS` — declared for the brightness slider; the actual write goes through Device Owner's `setSystemSetting()` so no user grant flow is involved
 
 Explicitly *not* requested: `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE_LOCATION`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`.
 
@@ -121,3 +122,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.5.2 → 1.6.0 | In-place. Adds home-screen shortcut buttons for Google Dialer, Google Contacts, and AOSP MMS (rearranged as a 2×2 grid with Al Rajhi). |
 | 1.6.0 → 1.6.1 | In-place. Fixes a HOME-intent trap where outside-boundary unlock silently re-engaged the kiosk; release now disables the HOME alias and explicitly hands off to the system launcher. |
 | 1.6.1 → 1.6.2 | In-place. If Location is off, the kiosk now pops the Play Services system dialog directly so the user can re-enable GPS in place instead of being stranded. |
+| 1.6.2 → 1.7.0 | In-place. Adds a system-brightness slider on the main screen driven by Device Owner's `setSystemSetting` (no WRITE_SETTINGS prompt). Requires Android 9+ for the brightness write path. |

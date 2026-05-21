@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import com.hmdd.simplelock.receiver.AppDeviceAdminReceiver
 
 /**
@@ -78,6 +79,28 @@ class LockManager(private val context: Context) {
             PackageManager.DONT_KILL_APP,
         )
     }
+
+    /**
+     * Sets the system screen brightness via Device Owner's setSystemSetting,
+     * which sidesteps the WRITE_SETTINGS user-grant flow entirely (API 28+).
+     * Switches brightness mode to MANUAL first so the value actually takes
+     * effect (auto-brightness would otherwise immediately overwrite it).
+     * Returns true if the change was applied.
+     */
+    fun setSystemBrightness(value: Int): Boolean {
+        if (!isDeviceOwner()) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
+        val clamped = value.coerceIn(1, 255)
+        return runCatching {
+            dpm.setSystemSetting(admin, Settings.System.SCREEN_BRIGHTNESS_MODE, "0")
+            dpm.setSystemSetting(admin, Settings.System.SCREEN_BRIGHTNESS, clamped.toString())
+        }.isSuccess
+    }
+
+    /** Reads the current system brightness (0–255), defaulting to mid-scale on failure. */
+    fun currentSystemBrightness(): Int = runCatching {
+        Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+    }.getOrDefault(128).coerceIn(1, 255)
 
     private fun telecomDialer(): String? = runCatching {
         val tm = context.getSystemService(Context.TELECOM_SERVICE)
