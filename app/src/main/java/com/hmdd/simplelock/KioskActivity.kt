@@ -3,16 +3,22 @@ package com.hmdd.simplelock
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.hmdd.simplelock.databinding.ActivityKioskBinding
@@ -43,6 +49,17 @@ class KioskActivity : AppCompatActivity() {
     }
     private var cancelToken: CancellationTokenSource? = null
 
+    /** Latched by releaseKiosk() so any post-finish relaunch bails out instantly. */
+    private var released = false
+
+    /** Result of the system "turn Location on?" dialog; OK → retry the fix. */
+    private val locationResolution = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) verifyLocation()
+        else toast(getString(R.string.toast_enable_location))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityKioskBinding.inflate(layoutInflater)
@@ -59,8 +76,15 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (released) {
+            // Android relaunched us after release (e.g. lingering HOME
+            // dispatch). Bail before re-engaging lock task.
+            finishAndRemoveTask()
+            return
+        }
         // Always-on guarantees:
         lockManager.applyPolicies()
+        lockManager.setKioskHomeAliasEnabled(true)
         if (!isInLockTask()) startLockTask()
         KioskNotificationService.start(this)
         // Reset transient UI in case we resumed from a phone call etc.
@@ -83,7 +107,6 @@ class KioskActivity : AppCompatActivity() {
     // Unlock check
     // ------------------------------------------------------------------
 
-    @SuppressLint("MissingPermission")
     private fun onCheckUnlockClicked() {
         val boundary = GeofencePrefs.boundary(this)
         if (boundary == null) {
@@ -97,7 +120,43 @@ class KioskActivity : AppCompatActivity() {
         ) {
             toast(getString(R.string.permissions_required)); return
         }
+        ensureLocationEnabledThen { verifyLocation() }
+    }
 
+    /**
+     * If Location services are off the user is one tap away from being trapped
+     * (the kiosk needs a fix to release). Surface the standard Play Services
+     * system dialog directly on top of the kiosk so they can enable Location
+     * in place — it's a system overlay, allowed inside lock task, and does
+     * not require adding com.android.settings to the allowlist.
+     */
+    private fun ensureLocationEnabledThen(onReady: () -> Unit) {
+        val locationRequest = LocationRequest.Builder(
+            Priority.PRIORITY_HIGH_ACCURACY, 0L
+        ).build()
+        val settingsRequest = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+            .setAlwaysShow(true)
+            .build()
+        LocationServices.getSettingsClient(this)
+            .checkLocationSettings(settingsRequest)
+            .addOnSuccessListener { onReady() }
+            .addOnFailureListener { e ->
+                if (e is ResolvableApiException) {
+                    runCatching {
+                        locationResolution.launch(
+                            IntentSenderRequest.Builder(e.resolution).build()
+                        )
+                    }.onFailure { toast(getString(R.string.toast_enable_location)) }
+                } else {
+                    toast(getString(R.string.toast_enable_location))
+                }
+            }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun verifyLocation() {
+        val boundary = GeofencePrefs.boundary(this) ?: return
         cancelToken?.cancel()
         val cts = CancellationTokenSource().also { cancelToken = it }
         setChecking(true)
@@ -126,6 +185,7 @@ class KioskActivity : AppCompatActivity() {
         )
         val distance = out[0]
         if (distance > boundary.third) {
+            toast(getString(R.string.toast_unlocking))
             releaseKiosk()
         } else {
             val remaining = (boundary.third - distance).toInt()
@@ -135,8 +195,18 @@ class KioskActivity : AppCompatActivity() {
     }
 
     private fun releaseKiosk() {
+        released = true
         if (isInLockTask()) runCatching { stopLockTask() }
+        // Disable our HOME alias BEFORE firing the HOME intent so Android
+        // resolves it to the user's real launcher, not back to us.
+        lockManager.setKioskHomeAliasEnabled(false)
         KioskNotificationService.stop(this)
+        runCatching {
+            startActivity(Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
         finishAndRemoveTask()
     }
 

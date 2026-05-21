@@ -20,10 +20,20 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Package visibility (Android 11+): we resolve the launch intent for
-         the user-exempted Al Rajhi Retail app. -->
+    <!-- Brightness control. Granted automatically because we are Device
+         Owner, which can also write system settings via
+         DevicePolicyManager.setSystemSetting(). Declared explicitly so the
+         fallback read path (Settings.System.getInt) also works. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Package visibility (Android 11+): we resolve launch intents for
+         the user-exempted shortcut apps. -->
     <queries>
         <package android:name="com.alrajhiretailapp" />
+        <package android:name="com.google.android.dialer" />
+        <package android:name="com.google.android.contacts" />
+        <package android:name="com.android.mms" />
     </queries>
 
     <application
@@ -57,22 +67,34 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Kiosk activity: HOME, lock-task surface. -->
+        <!-- Kiosk activity: launched explicitly from MainActivity. The HOME
+             intent filter lives on KioskHomeAlias below so we can toggle it
+             on only while the kiosk is actively pinned. -->
         <activity
             android:name=".KioskActivity"
-            android:exported="true"
+            android:exported="false"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:lockTaskMode="if_whitelisted"
-            android:theme="@style/Theme.SimpleLock.Kiosk">
+            android:theme="@style/Theme.SimpleLock.Kiosk" />
+
+        <!-- HOME handler alias. Disabled by default; LockManager enables it
+             before the kiosk takes over and disables it on release so the
+             outside-boundary unlock hands HOME back to the system launcher
+             instead of relaunching ourselves into another lock-task cycle. -->
+        <activity-alias
+            android:name=".KioskHomeAlias"
+            android:targetActivity=".KioskActivity"
+            android:enabled="false"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <!-- Device admin receiver — required for Device Owner provisioning. -->
         <receiver

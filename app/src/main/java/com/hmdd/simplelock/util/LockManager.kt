@@ -3,7 +3,9 @@ package com.hmdd.simplelock.util
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
 import com.hmdd.simplelock.receiver.AppDeviceAdminReceiver
 
 /**
@@ -60,6 +62,45 @@ class LockManager(private val context: Context) {
             dpm.setLockTaskFeatures(admin, features)
         }
     }
+
+    /**
+     * Toggles the HOME intent-filter alias for KioskActivity. Enabled only
+     * while the kiosk is genuinely pinned, so finishing it on unlock hands
+     * HOME back to the user's real system launcher.
+     */
+    fun setKioskHomeAliasEnabled(enabled: Boolean) {
+        val newState = if (enabled)
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        else
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        context.packageManager.setComponentEnabledSetting(
+            ComponentName(context.packageName, "${context.packageName}.KioskHomeAlias"),
+            newState,
+            PackageManager.DONT_KILL_APP,
+        )
+    }
+
+    /**
+     * Sets the system screen brightness via Device Owner's setSystemSetting,
+     * which sidesteps the WRITE_SETTINGS user-grant flow entirely (API 28+).
+     * Switches brightness mode to MANUAL first so the value actually takes
+     * effect (auto-brightness would otherwise immediately overwrite it).
+     * Returns true if the change was applied.
+     */
+    fun setSystemBrightness(value: Int): Boolean {
+        if (!isDeviceOwner()) return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return false
+        val clamped = value.coerceIn(1, 255)
+        return runCatching {
+            dpm.setSystemSetting(admin, Settings.System.SCREEN_BRIGHTNESS_MODE, "0")
+            dpm.setSystemSetting(admin, Settings.System.SCREEN_BRIGHTNESS, clamped.toString())
+        }.isSuccess
+    }
+
+    /** Reads the current system brightness (0–255), defaulting to mid-scale on failure. */
+    fun currentSystemBrightness(): Int = runCatching {
+        Settings.System.getInt(context.contentResolver, Settings.System.SCREEN_BRIGHTNESS)
+    }.getOrDefault(128).coerceIn(1, 255)
 
     private fun telecomDialer(): String? = runCatching {
         val tm = context.getSystemService(Context.TELECOM_SERVICE)

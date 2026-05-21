@@ -12,9 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Extends the lock-task allowlist with the AOSP MMS app (com.android.mms).
-        versionCode = 8
-        versionName = "1.5.2"
+        // Adds a system-brightness slider on MainActivity driven by Device
+        // Owner's setSystemSetting (no WRITE_SETTINGS user prompt).
+        versionCode = 12
+        versionName = "1.7.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible

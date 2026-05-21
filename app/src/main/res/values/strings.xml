@@ -9,12 +9,22 @@
     <string name="btn_set_boundary">Set Boundary</string>
     <string name="btn_save_boundary">Save Boundary</string>
     <string name="btn_open_alrajhi">Open Al Rajhi Retail</string>
+    <string name="btn_open_dialer">Open Phone</string>
+    <string name="btn_open_contacts">Open Contacts</string>
+    <string name="btn_open_mms">Open Messages</string>
+
+    <!-- Exempted-app display names (used by the "not installed" toast) -->
+    <string name="app_alrajhi">Al Rajhi Retail</string>
+    <string name="app_google_dialer">Google Phone</string>
+    <string name="app_google_contacts">Google Contacts</string>
+    <string name="app_aosp_mms">Messages</string>
 
     <!-- Status -->
     <string name="status_owner_yes">Device Owner: granted ✓</string>
     <string name="status_owner_no">Device Owner: NOT granted — see README</string>
     <string name="status_boundary_unset">Boundary: not set</string>
     <string name="status_boundary_set">Boundary: %1$.5f, %2$.5f (r=%3$.0f m)</string>
+    <string name="brightness_status">سطوع الشاشة: %1$d%%</string>
 
     <!-- Inline status -->
     <string name="checking_gps">Checking GPS…</string>
@@ -29,9 +39,11 @@
     <string name="toast_location_failed">Location check failed: %1$s</string>
     <string name="toast_outside_boundary">Outside boundary by %1$d m. Cannot lock.</string>
     <string name="toast_still_inside">Still inside boundary. Cannot unlock yet.</string>
+    <string name="toast_unlocking">Outside boundary — unlocking.</string>
+    <string name="toast_enable_location">Location is off. Tap OK on the dialog to enable it, or pull down the notification shade and toggle Location.</string>
     <string name="toast_boundary_saved">Boundary saved.</string>
     <string name="toast_tap_map_first">Tap the map to choose a center.</string>
-    <string name="toast_alrajhi_missing">Al Rajhi Retail app is not installed.</string>
+    <string name="toast_app_missing">%1$s is not installed.</string>
 
     <!-- Map -->
     <string name="boundary_center">Boundary center</string>
