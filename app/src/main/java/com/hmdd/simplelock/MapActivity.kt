@@ -14,6 +14,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.hmdd.simplelock.databinding.ActivityMapBinding
 import com.hmdd.simplelock.util.GeofencePrefs
+import com.hmdd.simplelock.util.LockManager
 
 class MapActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -27,6 +28,17 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onCreate(savedInstanceState)
         binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Hard block: never let the boundary be edited while the kiosk is
+        // pinned, otherwise a user with notification access could escape
+        // lock task by redrawing the geofence.
+        if (LockManager(this).isInLockTask()) {
+            Toast.makeText(
+                this, R.string.toast_locked_no_boundary_change, Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
+        }
 
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
@@ -49,7 +61,18 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback {
                 Toast.makeText(this, R.string.toast_tap_map_first, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            GeofencePrefs.saveBoundary(this, m.position.latitude, m.position.longitude, pickedRadius)
+            val saved = GeofencePrefs.saveBoundary(
+                this, m.position.latitude, m.position.longitude, pickedRadius
+            )
+            if (!saved) {
+                // Storage layer refused — kiosk became active while the map
+                // was open. Bail out without persisting anything.
+                Toast.makeText(
+                    this, R.string.toast_locked_no_boundary_change, Toast.LENGTH_LONG
+                ).show()
+                finish()
+                return@setOnClickListener
+            }
             Toast.makeText(this, R.string.toast_boundary_saved, Toast.LENGTH_SHORT).show()
             finish()
         }

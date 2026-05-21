@@ -23,12 +23,21 @@ object GeofencePrefs {
     private fun prefs(c: Context) =
         c.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun saveBoundary(c: Context, lat: Double, lng: Double, radiusMeters: Float) {
+    /**
+     * Persists a new boundary. Refuses the write while the kiosk is pinned —
+     * otherwise a user with notification access could escape lock task by
+     * redrawing the geofence to exclude their current location and then
+     * unlocking against the freshly-saved boundary. Returns true if the
+     * boundary was saved, false if the call was rejected.
+     */
+    fun saveBoundary(c: Context, lat: Double, lng: Double, radiusMeters: Float): Boolean {
+        if (LockManager(c).isInLockTask()) return false
         prefs(c).edit()
             .putLong(K_LAT, java.lang.Double.doubleToRawLongBits(lat))
             .putLong(K_LNG, java.lang.Double.doubleToRawLongBits(lng))
             .putFloat(K_RADIUS, radiusMeters)
             .apply()
+        return true
     }
 
     fun boundary(c: Context): Triple<Double, Double, Float>? {
