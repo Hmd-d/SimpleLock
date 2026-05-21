@@ -25,6 +25,20 @@ class LockManager(private val context: Context) {
     fun isDeviceOwner(): Boolean = dpm.isDeviceOwnerApp(context.packageName)
 
     /**
+     * True when this device is currently pinned via lock task. Used as the
+     * "kiosk is active" signal to block boundary edits, brightness lockout
+     * holes, and any other escape paths from outside KioskActivity.
+     */
+    fun isInLockTask(): Boolean {
+        val am = context.getSystemService(Context.ACTIVITY_SERVICE)
+            as android.app.ActivityManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
+            am.lockTaskModeState != android.app.ActivityManager.LOCK_TASK_MODE_NONE
+        else
+            @Suppress("DEPRECATION") am.isInLockTaskMode
+    }
+
+    /**
      * One-shot policy configuration. Idempotent — safe to call on every boot
      * or whenever the user toggles the system on.
      *

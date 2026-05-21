@@ -1,7 +1,6 @@
 package com.hmdd.simplelock.service
 
 import android.app.Notification
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -9,7 +8,6 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.hmdd.simplelock.MainActivity
 import com.hmdd.simplelock.R
 import com.hmdd.simplelock.SimpleLockApp
 
@@ -42,16 +40,14 @@ class KioskNotificationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun startForegroundCompat() {
-        val tap = PendingIntent.getActivity(
-            this, 0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        // Intentionally no contentIntent: tapping the kiosk notification must
+        // NOT escape to MainActivity (or any activity outside the kiosk),
+        // otherwise the user could navigate to MapActivity, redraw the
+        // geofence, and unlock against the new boundary.
         val notif: Notification = NotificationCompat.Builder(this, SimpleLockApp.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_lock)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(getString(R.string.notif_text))
-            .setContentIntent(tap)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .build()

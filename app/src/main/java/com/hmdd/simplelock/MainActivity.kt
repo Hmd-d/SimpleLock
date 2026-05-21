@@ -69,6 +69,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.btnSetBoundary.setOnClickListener {
+            if (lockManager.isInLockTask()) {
+                toast(getString(R.string.toast_locked_no_boundary_change)); return@setOnClickListener
+            }
             startActivity(Intent(this, MapActivity::class.java))
         }
         binding.btnVerifyLock.setOnClickListener { onVerifyAndLockClicked() }
@@ -154,7 +157,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setChecking(on: Boolean) {
         binding.tvVerifying.visibility = if (on) View.VISIBLE else View.GONE
-        binding.btnSetBoundary.isEnabled = !on
+        // While the kiosk is pinned (e.g. user pulled the shade and came
+        // back), Set Boundary stays disabled regardless of the check state.
+        binding.btnSetBoundary.isEnabled = !on && !lockManager.isInLockTask()
         binding.btnVerifyLock.isEnabled = !on
     }
 

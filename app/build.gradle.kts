@@ -12,10 +12,11 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Adds a system-brightness slider on MainActivity driven by Device
-        // Owner's setSystemSetting (no WRITE_SETTINGS user prompt).
-        versionCode = 12
-        versionName = "1.7.0"
+        // Security fix: redrawing the boundary while pinned could be used to
+        // escape lock task. Set Boundary + MapActivity + GeofencePrefs +
+        // kiosk notification all refuse boundary edits during lock task.
+        versionCode = 13
+        versionName = "1.7.1"
     }
 
     // Stable debug signing config so every CI build is update-compatible

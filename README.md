@@ -4,7 +4,7 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.7.0)
+## Architecture (v1.7.1)
 
 | Layer | Component | Role |
 |---|---|---|
@@ -123,3 +123,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.6.0 → 1.6.1 | In-place. Fixes a HOME-intent trap where outside-boundary unlock silently re-engaged the kiosk; release now disables the HOME alias and explicitly hands off to the system launcher. |
 | 1.6.1 → 1.6.2 | In-place. If Location is off, the kiosk now pops the Play Services system dialog directly so the user can re-enable GPS in place instead of being stranded. |
 | 1.6.2 → 1.7.0 | In-place. Adds a system-brightness slider on the main screen driven by Device Owner's `setSystemSetting` (no WRITE_SETTINGS prompt). Requires Android 9+ for the brightness write path. |
+| 1.7.0 → 1.7.1 | In-place. Security: closes a lock-task escape where a user could redraw the geofence while pinned (kiosk notification → MainActivity → MapActivity → save → unlock). The kiosk notification no longer has a tap intent, and **Set Boundary** / `MapActivity` / `GeofencePrefs.saveBoundary` all refuse to mutate the boundary during lock task. |
