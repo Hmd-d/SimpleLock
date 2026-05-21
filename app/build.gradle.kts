@@ -12,11 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Brings the four exempted-app shortcuts onto the kiosk surface
-        // itself (no need to escape to MainActivity) and adds a
-        // BOOT_COMPLETED receiver so the kiosk survives reboot.
-        versionCode = 14
-        versionName = "1.8.0"
+        // Adds the brightness slider to the kiosk surface too so it's
+        // controllable while pinned (was only on MainActivity before).
+        versionCode = 15
+        versionName = "1.8.1"
     }
 
     // Stable debug signing config so every CI build is update-compatible

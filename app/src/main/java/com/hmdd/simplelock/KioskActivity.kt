@@ -9,6 +9,7 @@ import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,7 +85,31 @@ class KioskActivity : AppCompatActivity() {
         binding.btnOpenMms.setOnClickListener {
             launchExempted(LockManager.AOSP_MMS_PACKAGE, getString(R.string.app_aosp_mms))
         }
+        setupBrightnessControl()
     }
+
+    /** Same in-kiosk brightness slider as MainActivity — see setupBrightnessControl there. */
+    private fun setupBrightnessControl() {
+        val initial = lockManager.currentSystemBrightness()
+        binding.seekBarBrightness.progress = initial
+        binding.tvBrightnessStatus.text = brightnessLabel(initial)
+        binding.seekBarBrightness.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    sb: SeekBar?, progress: Int, fromUser: Boolean
+                ) {
+                    val clamped = progress.coerceAtLeast(1)
+                    binding.tvBrightnessStatus.text = brightnessLabel(clamped)
+                    if (fromUser) lockManager.setSystemBrightness(clamped)
+                }
+                override fun onStartTrackingTouch(sb: SeekBar?) = Unit
+                override fun onStopTrackingTouch(sb: SeekBar?) = Unit
+            }
+        )
+    }
+
+    private fun brightnessLabel(value: Int): String =
+        getString(R.string.brightness_status, (value * 100) / 255)
 
     /** Launches a lock-task-whitelisted app from inside the kiosk. */
     private fun launchExempted(pkg: String, label: String) {

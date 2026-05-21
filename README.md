@@ -4,13 +4,13 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.8.0)
+## Architecture (v1.8.1)
 
 | Layer | Component | Role |
 |---|---|---|
 | UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts + a system-brightness slider |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs. Refuses to open / save while lock task is active |
-| UI | `KioskActivity` | The pinned surface, holds `startLockTask()`, the always-accessible **Check Location to Unlock** button, **and** its own 2×2 shortcut grid for the four exempted apps so they're reachable without escaping the kiosk |
+| UI | `KioskActivity` | The pinned surface, holds `startLockTask()`, the always-accessible **Check Location to Unlock** button, its own 2×2 shortcut grid for the four exempted apps, and the system-brightness slider — all reachable without escaping the kiosk |
 | Receiver | `BootReceiver` | Listens for `BOOT_COMPLETED`. If `GeofencePrefs.isKioskActive` is true, re-applies policies + relaunches `KioskActivity` so the kiosk survives reboot |
 | Manifest | `KioskHomeAlias` | Disabled-by-default `<activity-alias>` carrying the HOME intent filter. `LockManager` flips it on when the kiosk takes over and off on release, so unlock hands HOME back to the system launcher |
 | Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Notification has no tap intent, so it can't be used to escape lock task |
@@ -127,3 +127,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.6.2 → 1.7.0 | In-place. Adds a system-brightness slider on the main screen driven by Device Owner's `setSystemSetting` (no WRITE_SETTINGS prompt). Requires Android 9+ for the brightness write path. |
 | 1.7.0 → 1.7.1 | In-place. Security: closes a lock-task escape where a user could redraw the geofence while pinned (kiosk notification → MainActivity → MapActivity → save → unlock). The kiosk notification no longer has a tap intent, and **Set Boundary** / `MapActivity` / `GeofencePrefs.saveBoundary` all refuse to mutate the boundary during lock task. |
 | 1.7.1 → 1.8.0 | In-place. Two regressions fixed: (1) the four exempted-app shortcuts now live directly on the kiosk surface so they remain reachable once pinned (without reopening the boundary-edit attack), and (2) a `BOOT_COMPLETED` receiver re-engages the kiosk after reboot using a persisted `kiosk_active` flag. |
+| 1.8.0 → 1.8.1 | In-place. Adds the brightness slider to `KioskActivity` so screen brightness can be adjusted while pinned. |
