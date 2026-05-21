@@ -72,6 +72,28 @@ class KioskActivity : AppCompatActivity() {
         }
 
         binding.btnCheckUnlock.setOnClickListener { onCheckUnlockClicked() }
+        binding.btnOpenAlrajhi.setOnClickListener {
+            launchExempted(LockManager.ALRAJHI_RETAIL_PACKAGE, getString(R.string.app_alrajhi))
+        }
+        binding.btnOpenDialer.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_DIALER_PACKAGE, getString(R.string.app_google_dialer))
+        }
+        binding.btnOpenContacts.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_CONTACTS_PACKAGE, getString(R.string.app_google_contacts))
+        }
+        binding.btnOpenMms.setOnClickListener {
+            launchExempted(LockManager.AOSP_MMS_PACKAGE, getString(R.string.app_aosp_mms))
+        }
+    }
+
+    /** Launches a lock-task-whitelisted app from inside the kiosk. */
+    private fun launchExempted(pkg: String, label: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
+        if (intent == null) {
+            toast(getString(R.string.toast_app_missing, label))
+            return
+        }
+        startActivity(intent)
     }
 
     override fun onResume() {
@@ -200,6 +222,9 @@ class KioskActivity : AppCompatActivity() {
         // Disable our HOME alias BEFORE firing the HOME intent so Android
         // resolves it to the user's real launcher, not back to us.
         lockManager.setKioskHomeAliasEnabled(false)
+        // Clear the persisted "kiosk active" flag so BootReceiver won't
+        // re-pin the device on the next reboot.
+        GeofencePrefs.setKioskActive(this, false)
         KioskNotificationService.stop(this)
         runCatching {
             startActivity(Intent(Intent.ACTION_MAIN).apply {

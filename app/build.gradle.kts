@@ -12,11 +12,11 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Security fix: redrawing the boundary while pinned could be used to
-        // escape lock task. Set Boundary + MapActivity + GeofencePrefs +
-        // kiosk notification all refuse boundary edits during lock task.
-        versionCode = 13
-        versionName = "1.7.1"
+        // Brings the four exempted-app shortcuts onto the kiosk surface
+        // itself (no need to escape to MainActivity) and adds a
+        // BOOT_COMPLETED receiver so the kiosk survives reboot.
+        versionCode = 14
+        versionName = "1.8.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible
