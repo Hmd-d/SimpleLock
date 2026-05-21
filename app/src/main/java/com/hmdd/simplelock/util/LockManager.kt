@@ -35,13 +35,17 @@ class LockManager(private val context: Context) {
 
         // Packages allowed to run while pinned. Include the system dialer so
         // incoming calls can be answered, the default SMS app for reading,
-        // and the user-exempted Al Rajhi Retail app.
+        // and the user-exempted apps (Al Rajhi Retail, Google Dialer, Google
+        // Contacts). distinct() guards against duplicates when the default
+        // dialer already resolves to com.google.android.dialer.
         val allowed = buildList {
             add(context.packageName)
             telecomDialer()?.let(::add)
             defaultSms()?.let(::add)
             add(ALRAJHI_RETAIL_PACKAGE)
-        }.toTypedArray()
+            add(GOOGLE_DIALER_PACKAGE)
+            add(GOOGLE_CONTACTS_PACKAGE)
+        }.distinct().toTypedArray()
         dpm.setLockTaskPackages(admin, allowed)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -68,5 +72,7 @@ class LockManager(private val context: Context) {
 
     companion object {
         const val ALRAJHI_RETAIL_PACKAGE = "com.alrajhiretailapp"
+        const val GOOGLE_DIALER_PACKAGE = "com.google.android.dialer"
+        const val GOOGLE_CONTACTS_PACKAGE = "com.google.android.contacts"
     }
 }

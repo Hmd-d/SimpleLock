@@ -24,7 +24,7 @@ What stays available inside kiosk (configured via `setLockTaskFeatures`):
 - `LOCK_TASK_FEATURE_KEYGUARD` — normal lock screen still works
 - `LOCK_TASK_FEATURE_HOME` — kiosk acts as HOME, can't be escaped to launcher
 
-The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable. The Al Rajhi Retail app (`com.alrajhiretailapp`) is also whitelisted as a user-exempted app — launch it from the **Open Al Rajhi Retail** button on the main screen and it continues to work even inside the lock-task kiosk.
+The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable. Three additional packages are pinned to the allowlist as user-exempted apps so they keep running inside the kiosk: Al Rajhi Retail (`com.alrajhiretailapp`, launchable from the **Open Al Rajhi Retail** button on the main screen), Google Dialer (`com.google.android.dialer`) and Google Contacts (`com.google.android.contacts`).
 
 ## Lock & unlock flows
 
@@ -115,3 +115,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.2.0 → 1.3.0 | In-place. Adds adaptive polling tiers, drops `FLAG_KEEP_SCREEN_ON`. |
 | 1.3.0 → 1.4.0 | In-place, **but saved boundary is lost.** v1.3.0 stored prefs in device-protected storage; v1.4.0 reverted to credential-protected. Re-tap **Set Boundary** after upgrading. |
 | 1.4.0 → 1.5.0 | In-place. Adds the Al Rajhi Retail shortcut + lock-task exemption. |
+| 1.5.0 → 1.5.1 | In-place. Adds Google Dialer and Google Contacts to the lock-task exemption list. |
