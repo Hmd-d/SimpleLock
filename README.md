@@ -4,11 +4,11 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.4.0)
+## Architecture (v1.5.0)
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | Two buttons: **Verify Location & Lock** (primary) and **Set Boundary** |
+| UI | `MainActivity` | Three buttons: **Verify Location & Lock** (primary), **Set Boundary**, and **Open Al Rajhi Retail** (shortcut to the exempted app) |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs |
 | UI | `KioskActivity` | The pinned surface, holds `startLockTask()` and the always-accessible **Check Location to Unlock** button |
 | Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Zero location work, zero callbacks |
@@ -24,7 +24,7 @@ What stays available inside kiosk (configured via `setLockTaskFeatures`):
 - `LOCK_TASK_FEATURE_KEYGUARD` — normal lock screen still works
 - `LOCK_TASK_FEATURE_HOME` — kiosk acts as HOME, can't be escaped to launcher
 
-The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable.
+The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable. The Al Rajhi Retail app (`com.alrajhiretailapp`) is also whitelisted as a user-exempted app — launch it from the **Open Al Rajhi Retail** button on the main screen and it continues to work even inside the lock-task kiosk.
 
 ## Lock & unlock flows
 
@@ -114,3 +114,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.1.0 → 1.2.0 | In-place. Adds active polling + 5 s geofence responsiveness. |
 | 1.2.0 → 1.3.0 | In-place. Adds adaptive polling tiers, drops `FLAG_KEEP_SCREEN_ON`. |
 | 1.3.0 → 1.4.0 | In-place, **but saved boundary is lost.** v1.3.0 stored prefs in device-protected storage; v1.4.0 reverted to credential-protected. Re-tap **Set Boundary** after upgrading. |
+| 1.4.0 → 1.5.0 | In-place. Adds the Al Rajhi Retail shortcut + lock-task exemption. |

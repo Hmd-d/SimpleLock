@@ -59,6 +59,17 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MapActivity::class.java))
         }
         binding.btnVerifyLock.setOnClickListener { onVerifyAndLockClicked() }
+        binding.btnOpenAlrajhi.setOnClickListener { openAlRajhi() }
+    }
+
+    /** Launches the user-exempted Al Rajhi Retail app (also whitelisted for lock task). */
+    private fun openAlRajhi() {
+        val intent = packageManager.getLaunchIntentForPackage(LockManager.ALRAJHI_RETAIL_PACKAGE)
+        if (intent == null) {
+            toast(getString(R.string.toast_alrajhi_missing))
+            return
+        }
+        startActivity(intent)
     }
 
     override fun onResume() {
