@@ -12,10 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Adds home-screen shortcut buttons for the three remaining exempted
-        // apps (Google Dialer, Google Contacts, AOSP MMS) alongside Al Rajhi.
-        versionCode = 9
-        versionName = "1.6.0"
+        // Fix: HOME-intent trap re-engaged the kiosk after outside-boundary
+        // unlock. HOME filter moved to a toggleable activity-alias.
+        versionCode = 10
+        versionName = "1.6.1"
     }
 
     // Stable debug signing config so every CI build is update-compatible

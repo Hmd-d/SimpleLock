@@ -60,22 +60,34 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Kiosk activity: HOME, lock-task surface. -->
+        <!-- Kiosk activity: launched explicitly from MainActivity. The HOME
+             intent filter lives on KioskHomeAlias below so we can toggle it
+             on only while the kiosk is actively pinned. -->
         <activity
             android:name=".KioskActivity"
-            android:exported="true"
+            android:exported="false"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:lockTaskMode="if_whitelisted"
-            android:theme="@style/Theme.SimpleLock.Kiosk">
+            android:theme="@style/Theme.SimpleLock.Kiosk" />
+
+        <!-- HOME handler alias. Disabled by default; LockManager enables it
+             before the kiosk takes over and disables it on release so the
+             outside-boundary unlock hands HOME back to the system launcher
+             instead of relaunching ourselves into another lock-task cycle. -->
+        <activity-alias
+            android:name=".KioskHomeAlias"
+            android:targetActivity=".KioskActivity"
+            android:enabled="false"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <!-- Device admin receiver — required for Device Owner provisioning. -->
         <receiver

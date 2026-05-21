@@ -3,6 +3,7 @@ package com.hmdd.simplelock.util
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import com.hmdd.simplelock.receiver.AppDeviceAdminReceiver
 
@@ -59,6 +60,23 @@ class LockManager(private val context: Context) {
                 )
             dpm.setLockTaskFeatures(admin, features)
         }
+    }
+
+    /**
+     * Toggles the HOME intent-filter alias for KioskActivity. Enabled only
+     * while the kiosk is genuinely pinned, so finishing it on unlock hands
+     * HOME back to the user's real system launcher.
+     */
+    fun setKioskHomeAliasEnabled(enabled: Boolean) {
+        val newState = if (enabled)
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        else
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        context.packageManager.setComponentEnabledSetting(
+            ComponentName(context.packageName, "${context.packageName}.KioskHomeAlias"),
+            newState,
+            PackageManager.DONT_KILL_APP,
+        )
     }
 
     private fun telecomDialer(): String? = runCatching {

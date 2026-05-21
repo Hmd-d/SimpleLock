@@ -4,16 +4,17 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.6.0)
+## Architecture (v1.6.1)
 
 | Layer | Component | Role |
 |---|---|---|
 | UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts: **Open Al Rajhi Retail**, **Open Phone**, **Open Contacts**, **Open Messages** |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs |
 | UI | `KioskActivity` | The pinned surface, holds `startLockTask()` and the always-accessible **Check Location to Unlock** button |
+| Manifest | `KioskHomeAlias` | Disabled-by-default `<activity-alias>` carrying the HOME intent filter. `LockManager` flips it on when the kiosk takes over and off on release, so unlock hands HOME back to the system launcher |
 | Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Zero location work, zero callbacks |
 | Policy | `AppDeviceAdminReceiver` | Component registered as Device Owner |
-| Policy | `LockManager` | Wraps `DevicePolicyManager` config — `setLockTaskPackages` and `setLockTaskFeatures` |
+| Policy | `LockManager` | Wraps `DevicePolicyManager` config — `setLockTaskPackages`, `setLockTaskFeatures`, and the `KioskHomeAlias` toggle |
 | Storage | `GeofencePrefs` | SharedPreferences for the saved boundary triple (lat, lng, radius) only |
 
 What stays available inside kiosk (configured via `setLockTaskFeatures`):
@@ -118,3 +119,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.5.0 → 1.5.1 | In-place. Adds Google Dialer and Google Contacts to the lock-task exemption list. |
 | 1.5.1 → 1.5.2 | In-place. Adds the AOSP MMS app (`com.android.mms`) to the lock-task exemption list. |
 | 1.5.2 → 1.6.0 | In-place. Adds home-screen shortcut buttons for Google Dialer, Google Contacts, and AOSP MMS (rearranged as a 2×2 grid with Al Rajhi). |
+| 1.6.0 → 1.6.1 | In-place. Fixes a HOME-intent trap where outside-boundary unlock silently re-engaged the kiosk; release now disables the HOME alias and explicitly hands off to the system launcher. |

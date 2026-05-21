@@ -3,6 +3,7 @@ package com.hmdd.simplelock
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
@@ -43,6 +44,9 @@ class KioskActivity : AppCompatActivity() {
     }
     private var cancelToken: CancellationTokenSource? = null
 
+    /** Latched by releaseKiosk() so any post-finish relaunch bails out instantly. */
+    private var released = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityKioskBinding.inflate(layoutInflater)
@@ -59,8 +63,15 @@ class KioskActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (released) {
+            // Android relaunched us after release (e.g. lingering HOME
+            // dispatch). Bail before re-engaging lock task.
+            finishAndRemoveTask()
+            return
+        }
         // Always-on guarantees:
         lockManager.applyPolicies()
+        lockManager.setKioskHomeAliasEnabled(true)
         if (!isInLockTask()) startLockTask()
         KioskNotificationService.start(this)
         // Reset transient UI in case we resumed from a phone call etc.
@@ -126,6 +137,7 @@ class KioskActivity : AppCompatActivity() {
         )
         val distance = out[0]
         if (distance > boundary.third) {
+            toast(getString(R.string.toast_unlocking))
             releaseKiosk()
         } else {
             val remaining = (boundary.third - distance).toInt()
@@ -135,8 +147,18 @@ class KioskActivity : AppCompatActivity() {
     }
 
     private fun releaseKiosk() {
+        released = true
         if (isInLockTask()) runCatching { stopLockTask() }
+        // Disable our HOME alias BEFORE firing the HOME intent so Android
+        // resolves it to the user's real launcher, not back to us.
+        lockManager.setKioskHomeAliasEnabled(false)
         KioskNotificationService.stop(this)
+        runCatching {
+            startActivity(Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
         finishAndRemoveTask()
     }
 
