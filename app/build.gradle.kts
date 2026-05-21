@@ -12,10 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Fix: HOME-intent trap re-engaged the kiosk after outside-boundary
-        // unlock. HOME filter moved to a toggleable activity-alias.
-        versionCode = 10
-        versionName = "1.6.1"
+        // Fix: surface the system Location dialog directly on top of the
+        // kiosk so an accidentally-disabled GPS no longer traps the user.
+        versionCode = 11
+        versionName = "1.6.2"
     }
 
     // Stable debug signing config so every CI build is update-compatible

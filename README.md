@@ -4,7 +4,7 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.6.1)
+## Architecture (v1.6.2)
 
 | Layer | Component | Role |
 |---|---|---|
@@ -43,7 +43,7 @@ The default dialer is added to the lock-task allowlist so **incoming calls remai
 3. If distance > radius → `stopLockTask()`, FGS stops, activity finishes; you return to the system launcher.
 4. If still inside → toast + on-screen "Still inside boundary by N m"; kiosk stays.
 
-If GPS is off when you tap the button, you'll see `Could not get a location fix. Make sure GPS is enabled.` Pull down the notification shade (allowed by `LOCK_TASK_FEATURE_NOTIFICATIONS`), toggle Location, retry.
+If GPS is off when you tap the button, the kiosk surfaces the standard Play Services "Allow this app to use your location?" system dialog directly on top of itself — tap **OK** and the unlock check retries automatically. If you dismiss the dialog you can still pull the notification shade (allowed by `LOCK_TASK_FEATURE_NOTIFICATIONS`), toggle Location manually, and retry. The dialog is a system overlay so it works inside lock task without whitelisting `com.android.settings`.
 
 ## Provisioning the app as Device Owner
 
@@ -120,3 +120,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.5.1 → 1.5.2 | In-place. Adds the AOSP MMS app (`com.android.mms`) to the lock-task exemption list. |
 | 1.5.2 → 1.6.0 | In-place. Adds home-screen shortcut buttons for Google Dialer, Google Contacts, and AOSP MMS (rearranged as a 2×2 grid with Al Rajhi). |
 | 1.6.0 → 1.6.1 | In-place. Fixes a HOME-intent trap where outside-boundary unlock silently re-engaged the kiosk; release now disables the HOME alias and explicitly hands off to the system launcher. |
+| 1.6.1 → 1.6.2 | In-place. If Location is off, the kiosk now pops the Play Services system dialog directly so the user can re-enable GPS in place instead of being stranded. |

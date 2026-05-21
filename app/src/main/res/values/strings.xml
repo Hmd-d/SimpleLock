@@ -39,6 +39,7 @@
     <string name="toast_outside_boundary">Outside boundary by %1$d m. Cannot lock.</string>
     <string name="toast_still_inside">Still inside boundary. Cannot unlock yet.</string>
     <string name="toast_unlocking">Outside boundary — unlocking.</string>
+    <string name="toast_enable_location">Location is off. Tap OK on the dialog to enable it, or pull down the notification shade and toggle Location.</string>
     <string name="toast_boundary_saved">Boundary saved.</string>
     <string name="toast_tap_map_first">Tap the map to choose a center.</string>
     <string name="toast_app_missing">%1$s is not installed.</string>
