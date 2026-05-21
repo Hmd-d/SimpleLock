@@ -34,11 +34,13 @@ class LockManager(private val context: Context) {
         if (!isDeviceOwner()) return
 
         // Packages allowed to run while pinned. Include the system dialer so
-        // incoming calls can be answered, and the default SMS app for reading.
+        // incoming calls can be answered, the default SMS app for reading,
+        // and the user-exempted Al Rajhi Retail app.
         val allowed = buildList {
             add(context.packageName)
             telecomDialer()?.let(::add)
             defaultSms()?.let(::add)
+            add(ALRAJHI_RETAIL_PACKAGE)
         }.toTypedArray()
         dpm.setLockTaskPackages(admin, allowed)
 
@@ -63,4 +65,8 @@ class LockManager(private val context: Context) {
     private fun defaultSms(): String? = runCatching {
         android.provider.Telephony.Sms.getDefaultSmsPackage(context)
     }.getOrNull()
+
+    companion object {
+        const val ALRAJHI_RETAIL_PACKAGE = "com.alrajhiretailapp"
+    }
 }

@@ -12,10 +12,9 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Major architecture change: manual on-demand verification only,
-        // zero background location work. Installs in place over 1.3.0.
-        versionCode = 5
-        versionName = "1.4.0"
+        // Adds the user-exempted Al Rajhi Retail app shortcut + lock-task allowlist entry.
+        versionCode = 6
+        versionName = "1.5.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible
