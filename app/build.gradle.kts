@@ -12,9 +12,9 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Extends the lock-task allowlist with Google Dialer + Google Contacts.
-        versionCode = 7
-        versionName = "1.5.1"
+        // Extends the lock-task allowlist with the AOSP MMS app (com.android.mms).
+        versionCode = 8
+        versionName = "1.5.2"
     }
 
     // Stable debug signing config so every CI build is update-compatible
