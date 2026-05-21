@@ -1,19 +1,17 @@
 package com.hmdd.simplelock.util
 
 import android.content.Context
-import android.os.Build
 
 /**
- * Persistent state for the geofence system.
+ * Persistent state for the boundary.
  *
- * Stored in *device-protected storage* (`createDeviceProtectedStorageContext`)
- * so BootReceiver can read it during Direct Boot — before the user unlocks
- * the keyguard. This is what makes the fail-safe instant lock on power-up
- * possible without waiting for GPS.
+ * In the manual architecture there is no "enabled" toggle and no cached
+ * inside/outside state — every interaction is a one-shot location check
+ * driven by a user button press. So this store has shrunk to just the
+ * configured center+radius.
  *
- * Trade-off: device-protected storage is not encrypted with the user's
- * credential. The data here (boundary coords, enabled flag, inside flag) is
- * non-sensitive — the fail-safe guarantee is worth it.
+ * Plain default SharedPreferences are fine; we no longer need
+ * device-protected storage (no Direct Boot work anymore).
  */
 object GeofencePrefs {
 
@@ -21,18 +19,9 @@ object GeofencePrefs {
     private const val K_LAT = "geofence_lat"
     private const val K_LNG = "geofence_lng"
     private const val K_RADIUS = "geofence_radius_m"
-    private const val K_ENABLED = "system_enabled"
-    private const val K_INSIDE = "currently_inside"
-
-    private fun ctx(c: Context): Context {
-        val app = c.applicationContext
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            app.createDeviceProtectedStorageContext()
-        else app
-    }
 
     private fun prefs(c: Context) =
-        ctx(c).getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        c.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun saveBoundary(c: Context, lat: Double, lng: Double, radiusMeters: Float) {
         prefs(c).edit()
@@ -51,12 +40,4 @@ object GeofencePrefs {
             p.getFloat(K_RADIUS, 100f)
         )
     }
-
-    fun isEnabled(c: Context): Boolean = prefs(c).getBoolean(K_ENABLED, false)
-    fun setEnabled(c: Context, on: Boolean) =
-        prefs(c).edit().putBoolean(K_ENABLED, on).apply()
-
-    fun isInside(c: Context): Boolean = prefs(c).getBoolean(K_INSIDE, false)
-    fun setInside(c: Context, inside: Boolean) =
-        prefs(c).edit().putBoolean(K_INSIDE, inside).apply()
 }

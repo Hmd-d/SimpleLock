@@ -2,21 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Location -->
+    <!--
+      Permissions intentionally trimmed for the manual architecture:
+        - No ACCESS_BACKGROUND_LOCATION (location only fetched while activity is foreground)
+        - No FOREGROUND_SERVICE_LOCATION (the service does no location work)
+        - No RECEIVE_BOOT_COMPLETED (no boot receiver)
+        - No WAKE_LOCK (no background polling)
+    -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
-    <!-- Foreground service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- Wake / boot survival -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- Required for Google Maps -->
+    <!-- Google Maps -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -32,7 +32,6 @@
         android:theme="@style/Theme.SimpleLock"
         tools:targetApi="34">
 
-        <!-- Google Maps API key, injected by secrets-gradle-plugin from local.properties/secrets.properties -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${MAPS_API_KEY}" />
@@ -52,18 +51,16 @@
             android:exported="false"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Kiosk activity: this is the surface that holds startLockTask() while inside the geofence -->
+        <!-- Kiosk activity: HOME, lock-task surface. -->
         <activity
             android:name=".KioskActivity"
             android:exported="true"
             android:launchMode="singleInstance"
             android:excludeFromRecents="true"
-            android:directBootAware="true"
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:lockTaskMode="if_whitelisted"
             android:theme="@style/Theme.SimpleLock.Kiosk">
-            <!-- Acting as HOME ensures the user cannot leave to the launcher while in kiosk -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
@@ -71,7 +68,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Device admin receiver — required for Device Owner provisioning -->
+        <!-- Device admin receiver — required for Device Owner provisioning. -->
         <receiver
             android:name=".receiver.AppDeviceAdminReceiver"
             android:exported="true"
@@ -85,28 +82,19 @@
             </intent-filter>
         </receiver>
 
-        <!-- Geofence transitions land here -->
-        <receiver
-            android:name=".receiver.GeofenceBroadcastReceiver"
-            android:exported="true" />
-
-        <!-- Survive reboot — directBootAware so we can re-engage kiosk before
-             the user unlocks the device on power-up. -->
-        <receiver
-            android:name=".receiver.BootReceiver"
-            android:exported="true"
-            android:directBootAware="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
-        <!-- Persistent monitor -->
+        <!--
+          Minimal foreground service. Hosts the persistent kiosk notification
+          while the user is in kiosk mode. NO location work, NO background
+          polling — see KioskNotificationService for details.
+        -->
         <service
-            android:name=".service.GeofenceForegroundService"
+            android:name=".service.KioskNotificationService"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Persistent notification while Device Owner lock-task kiosk is active. Performs no background work." />
+        </service>
 
     </application>
 </manifest>

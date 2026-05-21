@@ -13,10 +13,10 @@
         android:text="@string/app_name"
         android:textSize="28sp"
         android:textStyle="bold"
+        android:layout_marginTop="24dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="24dp" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/tv_subtitle"
@@ -34,7 +34,7 @@
         android:id="@+id/tv_verifying"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/verifying_location"
+        android:text="@string/checking_gps"
         android:textSize="14sp"
         android:textStyle="italic"
         android:gravity="center"
@@ -44,25 +44,28 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Primary action: big, prominent. -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_set_boundary"
+        android:id="@+id/btn_verify_lock"
         android:layout_width="0dp"
-        android:layout_height="64dp"
-        android:text="@string/btn_set_boundary"
-        android:textSize="16sp"
+        android:layout_height="80dp"
+        android:text="@string/btn_verify_lock"
+        android:textSize="18sp"
         android:layout_marginTop="48dp"
         app:layout_constraintTop_toBottomOf="@id/tv_verifying"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Secondary action: outlined, smaller. -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_toggle_system"
+        android:id="@+id/btn_set_boundary"
+        style="@style/Widget.Material3.Button.OutlinedButton"
         android:layout_width="0dp"
-        android:layout_height="64dp"
-        android:text="@string/btn_toggle_on"
-        android:textSize="16sp"
+        android:layout_height="56dp"
+        android:text="@string/btn_set_boundary"
+        android:textSize="14sp"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_set_boundary"
+        app:layout_constraintTop_toBottomOf="@id/btn_verify_lock"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -72,7 +75,7 @@
         android:layout_height="wrap_content"
         android:textSize="12sp"
         android:layout_marginTop="32dp"
-        app:layout_constraintTop_toBottomOf="@id/btn_toggle_system"
+        app:layout_constraintTop_toBottomOf="@id/btn_set_boundary"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

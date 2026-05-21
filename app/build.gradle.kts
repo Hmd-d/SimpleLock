@@ -12,9 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Bumped for adaptive polling + battery improvements.
-        versionCode = 4
-        versionName = "1.3.0"
+        // Major architecture change: manual on-demand verification only,
+        // zero background location work. Installs in place over 1.3.0.
+        versionCode = 5
+        versionName = "1.4.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible
