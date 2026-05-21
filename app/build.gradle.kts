@@ -12,9 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Extends the lock-task allowlist with the AOSP MMS app (com.android.mms).
-        versionCode = 8
-        versionName = "1.5.2"
+        // Adds home-screen shortcut buttons for the three remaining exempted
+        // apps (Google Dialer, Google Contacts, AOSP MMS) alongside Al Rajhi.
+        versionCode = 9
+        versionName = "1.6.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible

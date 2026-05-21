@@ -4,11 +4,11 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.5.0)
+## Architecture (v1.6.0)
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | Three buttons: **Verify Location & Lock** (primary), **Set Boundary**, and **Open Al Rajhi Retail** (shortcut to the exempted app) |
+| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts: **Open Al Rajhi Retail**, **Open Phone**, **Open Contacts**, **Open Messages** |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs |
 | UI | `KioskActivity` | The pinned surface, holds `startLockTask()` and the always-accessible **Check Location to Unlock** button |
 | Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Zero location work, zero callbacks |
@@ -24,7 +24,7 @@ What stays available inside kiosk (configured via `setLockTaskFeatures`):
 - `LOCK_TASK_FEATURE_KEYGUARD` — normal lock screen still works
 - `LOCK_TASK_FEATURE_HOME` — kiosk acts as HOME, can't be escaped to launcher
 
-The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable. Four additional packages are pinned to the allowlist as user-exempted apps so they keep running inside the kiosk: Al Rajhi Retail (`com.alrajhiretailapp`, launchable from the **Open Al Rajhi Retail** button on the main screen), Google Dialer (`com.google.android.dialer`), Google Contacts (`com.google.android.contacts`) and the AOSP MMS app (`com.android.mms`).
+The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable. Four additional packages are pinned to the allowlist as user-exempted apps so they keep running inside the kiosk, each with its own shortcut button on the home screen: Al Rajhi Retail (`com.alrajhiretailapp` → **Open Al Rajhi Retail**), Google Dialer (`com.google.android.dialer` → **Open Phone**), Google Contacts (`com.google.android.contacts` → **Open Contacts**) and the AOSP MMS app (`com.android.mms` → **Open Messages**).
 
 ## Lock & unlock flows
 
@@ -117,3 +117,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.4.0 → 1.5.0 | In-place. Adds the Al Rajhi Retail shortcut + lock-task exemption. |
 | 1.5.0 → 1.5.1 | In-place. Adds Google Dialer and Google Contacts to the lock-task exemption list. |
 | 1.5.1 → 1.5.2 | In-place. Adds the AOSP MMS app (`com.android.mms`) to the lock-task exemption list. |
+| 1.5.2 → 1.6.0 | In-place. Adds home-screen shortcut buttons for Google Dialer, Google Contacts, and AOSP MMS (rearranged as a 2×2 grid with Al Rajhi). |

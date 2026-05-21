@@ -59,14 +59,25 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, MapActivity::class.java))
         }
         binding.btnVerifyLock.setOnClickListener { onVerifyAndLockClicked() }
-        binding.btnOpenAlrajhi.setOnClickListener { openAlRajhi() }
+        binding.btnOpenAlrajhi.setOnClickListener {
+            launchExempted(LockManager.ALRAJHI_RETAIL_PACKAGE, getString(R.string.app_alrajhi))
+        }
+        binding.btnOpenDialer.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_DIALER_PACKAGE, getString(R.string.app_google_dialer))
+        }
+        binding.btnOpenContacts.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_CONTACTS_PACKAGE, getString(R.string.app_google_contacts))
+        }
+        binding.btnOpenMms.setOnClickListener {
+            launchExempted(LockManager.AOSP_MMS_PACKAGE, getString(R.string.app_aosp_mms))
+        }
     }
 
-    /** Launches the user-exempted Al Rajhi Retail app (also whitelisted for lock task). */
-    private fun openAlRajhi() {
-        val intent = packageManager.getLaunchIntentForPackage(LockManager.ALRAJHI_RETAIL_PACKAGE)
+    /** Launches a user-exempted (lock-task whitelisted) app by package, or toasts if absent. */
+    private fun launchExempted(pkg: String, label: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
         if (intent == null) {
-            toast(getString(R.string.toast_alrajhi_missing))
+            toast(getString(R.string.toast_app_missing, label))
             return
         }
         startActivity(intent)
