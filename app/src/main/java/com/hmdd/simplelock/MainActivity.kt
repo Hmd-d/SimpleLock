@@ -254,6 +254,7 @@ class MainActivity : AppCompatActivity() {
             // Inside → hand off to kiosk. It starts FGS + lock task itself.
             lockManager.applyPolicies()
             lockManager.setKioskHomeAliasEnabled(true)
+            GeofencePrefs.setKioskActive(this, true)
             startActivity(Intent(this, KioskActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             })

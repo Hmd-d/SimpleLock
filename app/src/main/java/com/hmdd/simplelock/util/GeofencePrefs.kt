@@ -19,6 +19,7 @@ object GeofencePrefs {
     private const val K_LAT = "geofence_lat"
     private const val K_LNG = "geofence_lng"
     private const val K_RADIUS = "geofence_radius_m"
+    private const val K_KIOSK_ACTIVE = "kiosk_active"
 
     private fun prefs(c: Context) =
         c.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -39,6 +40,19 @@ object GeofencePrefs {
             .apply()
         return true
     }
+
+    /**
+     * Persisted "kiosk should be active" flag. Set true when MainActivity
+     * launches the kiosk, cleared when KioskActivity.releaseKiosk() runs.
+     * BootReceiver consults this on BOOT_COMPLETED to re-engage the kiosk
+     * if the device was pinned at power-off.
+     */
+    fun setKioskActive(c: Context, active: Boolean) {
+        prefs(c).edit().putBoolean(K_KIOSK_ACTIVE, active).apply()
+    }
+
+    fun isKioskActive(c: Context): Boolean =
+        prefs(c).getBoolean(K_KIOSK_ACTIVE, false)
 
     fun boundary(c: Context): Triple<Double, Double, Float>? {
         val p = prefs(c)

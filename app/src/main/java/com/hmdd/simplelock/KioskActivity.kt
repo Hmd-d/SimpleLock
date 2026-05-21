@@ -9,6 +9,7 @@ import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.widget.SeekBar
 import android.widget.Toast
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,6 +73,52 @@ class KioskActivity : AppCompatActivity() {
         }
 
         binding.btnCheckUnlock.setOnClickListener { onCheckUnlockClicked() }
+        binding.btnOpenAlrajhi.setOnClickListener {
+            launchExempted(LockManager.ALRAJHI_RETAIL_PACKAGE, getString(R.string.app_alrajhi))
+        }
+        binding.btnOpenDialer.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_DIALER_PACKAGE, getString(R.string.app_google_dialer))
+        }
+        binding.btnOpenContacts.setOnClickListener {
+            launchExempted(LockManager.GOOGLE_CONTACTS_PACKAGE, getString(R.string.app_google_contacts))
+        }
+        binding.btnOpenMms.setOnClickListener {
+            launchExempted(LockManager.AOSP_MMS_PACKAGE, getString(R.string.app_aosp_mms))
+        }
+        setupBrightnessControl()
+    }
+
+    /** Same in-kiosk brightness slider as MainActivity — see setupBrightnessControl there. */
+    private fun setupBrightnessControl() {
+        val initial = lockManager.currentSystemBrightness()
+        binding.seekBarBrightness.progress = initial
+        binding.tvBrightnessStatus.text = brightnessLabel(initial)
+        binding.seekBarBrightness.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    sb: SeekBar?, progress: Int, fromUser: Boolean
+                ) {
+                    val clamped = progress.coerceAtLeast(1)
+                    binding.tvBrightnessStatus.text = brightnessLabel(clamped)
+                    if (fromUser) lockManager.setSystemBrightness(clamped)
+                }
+                override fun onStartTrackingTouch(sb: SeekBar?) = Unit
+                override fun onStopTrackingTouch(sb: SeekBar?) = Unit
+            }
+        )
+    }
+
+    private fun brightnessLabel(value: Int): String =
+        getString(R.string.brightness_status, (value * 100) / 255)
+
+    /** Launches a lock-task-whitelisted app from inside the kiosk. */
+    private fun launchExempted(pkg: String, label: String) {
+        val intent = packageManager.getLaunchIntentForPackage(pkg)
+        if (intent == null) {
+            toast(getString(R.string.toast_app_missing, label))
+            return
+        }
+        startActivity(intent)
     }
 
     override fun onResume() {
@@ -200,6 +247,9 @@ class KioskActivity : AppCompatActivity() {
         // Disable our HOME alias BEFORE firing the HOME intent so Android
         // resolves it to the user's real launcher, not back to us.
         lockManager.setKioskHomeAliasEnabled(false)
+        // Clear the persisted "kiosk active" flag so BootReceiver won't
+        // re-pin the device on the next reboot.
+        GeofencePrefs.setKioskActive(this, false)
         KioskNotificationService.stop(this)
         runCatching {
             startActivity(Intent(Intent.ACTION_MAIN).apply {
