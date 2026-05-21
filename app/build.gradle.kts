@@ -12,9 +12,9 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Adds the user-exempted Al Rajhi Retail app shortcut + lock-task allowlist entry.
-        versionCode = 6
-        versionName = "1.5.0"
+        // Extends the lock-task allowlist with the AOSP MMS app (com.android.mms).
+        versionCode = 8
+        versionName = "1.5.2"
     }
 
     // Stable debug signing config so every CI build is update-compatible
