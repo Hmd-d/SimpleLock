@@ -1,30 +1,48 @@
 # SimpleLock
 
-Geofence-driven kiosk lockdown for Android. When the device crosses **into** a configured boundary, the system pins the device using Android's Device Owner lock-task mode. When it crosses **out**, the pin is released and the device returns to normal.
+Manual, geofence-validated kiosk lockdown for Android. The device pins itself using Device Owner lock-task mode when you press **Verify Location & Lock** *inside* a saved boundary, and releases when you press **Check Location to Unlock** *outside* it. There is no automatic background geofencing, no boot receiver, no polling — every lock and unlock is driven by an explicit button press.
 
-## Architecture
+This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
+
+## Architecture (v1.4.0)
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | Two buttons: set boundary / toggle system |
-| UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m) |
-| UI | `KioskActivity` | The pinned surface, holds `startLockTask()` |
-| Background | `GeofenceForegroundService` | Persistent monitor with sticky notification |
-| Background | `GeofenceBroadcastReceiver` | Handles `ENTER` / `EXIT` transitions |
-| Background | `BootReceiver` | Re-arms the monitor on reboot |
-| Policy | `AppDeviceAdminReceiver` | The component registered as Device Owner |
-| Policy | `LockManager` | Wraps `DevicePolicyManager` config |
-| Storage | `GeofencePrefs` | SharedPreferences for boundary + on/off |
+| UI | `MainActivity` | Two buttons: **Verify Location & Lock** (primary) and **Set Boundary** |
+| UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs |
+| UI | `KioskActivity` | The pinned surface, holds `startLockTask()` and the always-accessible **Check Location to Unlock** button |
+| Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Zero location work, zero callbacks |
+| Policy | `AppDeviceAdminReceiver` | Component registered as Device Owner |
+| Policy | `LockManager` | Wraps `DevicePolicyManager` config — `setLockTaskPackages` and `setLockTaskFeatures` |
+| Storage | `GeofencePrefs` | SharedPreferences for the saved boundary triple (lat, lng, radius) only |
 
 What stays available inside kiosk (configured via `setLockTaskFeatures`):
 
 - `LOCK_TASK_FEATURE_SYSTEM_INFO` — clock/battery
-- `LOCK_TASK_FEATURE_NOTIFICATIONS` — read SMS / alerts
+- `LOCK_TASK_FEATURE_NOTIFICATIONS` — read SMS / alerts (and toggle GPS from quick settings)
 - `LOCK_TASK_FEATURE_GLOBAL_ACTIONS` — power dialog
 - `LOCK_TASK_FEATURE_KEYGUARD` — normal lock screen still works
 - `LOCK_TASK_FEATURE_HOME` — kiosk acts as HOME, can't be escaped to launcher
 
 The default dialer is added to the lock-task allowlist so **incoming calls remain answerable**. The default SMS app is similarly whitelisted so messages remain readable.
+
+## Lock & unlock flows
+
+### Locking
+1. Open the app inside the configured boundary.
+2. Tap **Verify Location & Lock**.
+3. UI shows "Checking GPS…", buttons disable briefly.
+4. `FusedLocationProviderClient.getCurrentLocation(PRIORITY_HIGH_ACCURACY, …)` returns a fix.
+5. If distance to saved center ≤ radius → `KioskActivity` launches, lock task engages, FGS notification appears.
+6. If distance > radius → toast `Outside boundary by N m. Cannot lock.`, UI returns to idle.
+
+### Unlocking
+1. While in kiosk, tap **Check Location to Unlock** (always anchored to bottom of screen).
+2. Same single-fix request as above.
+3. If distance > radius → `stopLockTask()`, FGS stops, activity finishes; you return to the system launcher.
+4. If still inside → toast + on-screen "Still inside boundary by N m"; kiosk stays.
+
+If GPS is off when you tap the button, you'll see `Could not get a location fix. Make sure GPS is enabled.` Pull down the notification shade (allowed by `LOCK_TASK_FEATURE_NOTIFICATIONS`), toggle Location, retry.
 
 ## Provisioning the app as Device Owner
 
@@ -47,11 +65,31 @@ Expected output: `Success: Device owner set to package ComponentInfo{...}`.
 
 > ⚠️ Once set, Device Owner cannot be removed except by factory reset (or, programmatically, by the app itself via `clearDeviceOwnerApp`).
 
+## Permissions
+
+Trimmed for the manual architecture — no background or boot permissions are requested.
+
+- `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` — requested only at the moment you tap a verification button
+- `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_SPECIAL_USE` — for the kiosk notification
+- `POST_NOTIFICATIONS` — Android 13+
+- `INTERNET` + `ACCESS_NETWORK_STATE` — Google Maps
+
+Explicitly *not* requested: `ACCESS_BACKGROUND_LOCATION`, `FOREGROUND_SERVICE_LOCATION`, `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`.
+
+## Battery profile
+
+| State | Cost |
+|---|---|
+| App installed, not in kiosk | 0 — nothing runs |
+| Pressing a verify button | ~3–15 s of GPS at high accuracy, once per press |
+| In kiosk, screen off | Negligible (FGS posts a notification, performs no work) |
+| In kiosk, screen on | Normal foreground-app cost; no extra location work between button presses |
+
 ## Google Maps API key
 
 `MapActivity` needs a Maps SDK key.
 
-- Local builds: create `app/secrets.properties` with `MAPS_API_KEY=AIza...`
+- Local builds: create `secrets.properties` at the project root with `MAPS_API_KEY=AIza...`
 - CI: set the `MAPS_API_KEY` repository secret. The workflow injects it before building.
 
 The build succeeds without a key — the map will just render blank until one is provided.
@@ -66,10 +104,13 @@ gradle wrapper          # one-time, regenerates the wrapper jar
 
 Or trigger the **Android APK Build** GitHub Action from the Actions tab — the workflow uploads the APK as a build artifact.
 
-## Permissions requested at runtime
+The committed `debug.keystore` (password `android`) means every CI build signs identically, so `adb install -r` will update your installed app in place rather than requiring an uninstall.
 
-- `ACCESS_FINE_LOCATION`
-- `ACCESS_BACKGROUND_LOCATION` (Android 10+)
-- `POST_NOTIFICATIONS` (Android 13+)
+## Upgrading from older versions
 
-All declared in the manifest; the user grants them via `MainActivity` when toggling the system on.
+| From → To | Notes |
+|---|---|
+| 1.0.0 → 1.1.0 | Different debug key — must `adb uninstall` first, then install once. Future upgrades are in place. |
+| 1.1.0 → 1.2.0 | In-place. Adds active polling + 5 s geofence responsiveness. |
+| 1.2.0 → 1.3.0 | In-place. Adds adaptive polling tiers, drops `FLAG_KEEP_SCREEN_ON`. |
+| 1.3.0 → 1.4.0 | In-place, **but saved boundary is lost.** v1.3.0 stored prefs in device-protected storage; v1.4.0 reverted to credential-protected. Re-tap **Set Boundary** after upgrading. |
