@@ -12,11 +12,10 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Adds time-based lock: pin the device for N hours regardless of
-        // location, plus a 1-minute test button. Falls back to the existing
-        // location-based unlock once the timer expires.
-        versionCode = 16
-        versionName = "1.9.0"
+        // Raises the time-lock ceiling from 12 h to 168 h (7 days) and
+        // adds a days/hours breakdown in the slider label.
+        versionCode = 17
+        versionName = "1.9.1"
     }
 
     // Stable debug signing config so every CI build is update-compatible

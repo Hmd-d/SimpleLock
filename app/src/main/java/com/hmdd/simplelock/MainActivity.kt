@@ -100,13 +100,13 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setupTimeLockControls() {
         binding.seekBarHours.progress = 0  // → 1 hour
-        binding.tvHoursStatus.text = getString(R.string.hours_status, 1)
+        binding.tvHoursStatus.text = formatHoursStatus(1)
         binding.seekBarHours.setOnSeekBarChangeListener(
             object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(
                     sb: SeekBar?, progress: Int, fromUser: Boolean
                 ) {
-                    binding.tvHoursStatus.text = getString(R.string.hours_status, progress + 1)
+                    binding.tvHoursStatus.text = formatHoursStatus(progress + 1)
                 }
                 override fun onStartTrackingTouch(sb: SeekBar?) = Unit
                 override fun onStopTrackingTouch(sb: SeekBar?) = Unit
@@ -119,6 +119,13 @@ class MainActivity : AppCompatActivity() {
         binding.btnTimeLockTest.setOnClickListener {
             engageTimeLock(60L * 1000L)
         }
+    }
+
+    /** Adds a (days/hours) breakdown to the label once the duration ≥ 24 h. */
+    private fun formatHoursStatus(hours: Int): String = when {
+        hours < 24 -> getString(R.string.hours_status, hours)
+        hours % 24 == 0 -> getString(R.string.hours_status_days, hours, hours / 24)
+        else -> getString(R.string.hours_status_days_hours, hours, hours / 24, hours % 24)
     }
 
     /**

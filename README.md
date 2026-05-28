@@ -8,7 +8,7 @@ This trade-off (manual control vs. automatic detection) yields effectively **0% 
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts + a system-brightness slider + a time-based-lock pair (1–12 h slider with primary button + a 1-minute test button) |
+| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts + a system-brightness slider + a time-based-lock pair (1–168 h slider with primary button + a 1-minute test button) |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs. Refuses to open / save while lock task is active |
 | UI | `KioskActivity` | The pinned surface, holds `startLockTask()`, the always-accessible **Check Location to Unlock** button, the 2×2 shortcut grid, the brightness slider, and the time-based-lock guard that refuses release while the timer is still running |
 | Receiver | `BootReceiver` | Listens for `BOOT_COMPLETED`. If `GeofencePrefs.isKioskActive` is true, re-applies policies + relaunches `KioskActivity` so the kiosk survives reboot |
@@ -48,7 +48,7 @@ If GPS is off when you tap the button, the kiosk surfaces the standard Play Serv
 
 ### Time-based lock (v1.9.0+)
 
-A second way to engage the kiosk, independent of the geofence. On the main screen, set the hours (1–12) on the time-lock slider and tap **حجب لمدة محددة** to pin the device for that duration — no boundary check is performed, so the lock engages from any location. The **اختبار: حجب لدقيقة** button always locks for 60 seconds, for easy verification.
+A second way to engage the kiosk, independent of the geofence. On the main screen, set the hours (1–168, i.e. up to one week) on the time-lock slider and tap **حجب لمدة محددة** to pin the device for that duration — no boundary check is performed, so the lock engages from any location. The slider label shows a days/hours breakdown for values ≥ 24. The **اختبار: حجب لدقيقة** button always locks for 60 seconds, for easy verification.
 
 While the timer is running, tapping **Check Location to Unlock** is refused with a remaining-minutes toast and the kiosk message shows the countdown. When the timer expires, the next unlock tap falls through to the standard location-based flow (release if you're outside the saved boundary). The active-timer timestamp is in `GeofencePrefs` so it survives reboot — `BootReceiver` re-pins the kiosk, and the kiosk continues refusing release until the timer passes.
 
@@ -137,3 +137,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.7.1 → 1.8.0 | In-place. Two regressions fixed: (1) the four exempted-app shortcuts now live directly on the kiosk surface so they remain reachable once pinned (without reopening the boundary-edit attack), and (2) a `BOOT_COMPLETED` receiver re-engages the kiosk after reboot using a persisted `kiosk_active` flag. |
 | 1.8.0 → 1.8.1 | In-place. Adds the brightness slider to `KioskActivity` so screen brightness can be adjusted while pinned. |
 | 1.8.1 → 1.9.0 | In-place. Adds the time-based lock (1–12 h slider + 1-minute test button on `MainActivity`; `KioskActivity` refuses unlock while the timer is running and shows a countdown). The location-based lock and unlock paths are unchanged. |
+| 1.9.0 → 1.9.1 | In-place. Raises the time-lock ceiling from 12 h to 168 h (7 days) and adds a days/hours breakdown to the slider label. |
