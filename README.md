@@ -4,19 +4,19 @@ Manual, geofence-validated kiosk lockdown for Android. The device pins itself us
 
 This trade-off (manual control vs. automatic detection) yields effectively **0% background battery drain**: when the kiosk is not active, nothing in the app runs.
 
-## Architecture (v1.8.1)
+## Architecture (v1.9.0)
 
 | Layer | Component | Role |
 |---|---|---|
-| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts + a system-brightness slider |
+| UI | `MainActivity` | **Verify Location & Lock** (primary) + **Set Boundary** + a 2×2 grid of exempted-app shortcuts + a system-brightness slider + a time-based-lock pair (1–12 h slider with primary button + a 1-minute test button) |
 | UI | `MapActivity` | Tap-to-pick center + radius slider (50–1050 m), saves to prefs. Refuses to open / save while lock task is active |
-| UI | `KioskActivity` | The pinned surface, holds `startLockTask()`, the always-accessible **Check Location to Unlock** button, its own 2×2 shortcut grid for the four exempted apps, and the system-brightness slider — all reachable without escaping the kiosk |
+| UI | `KioskActivity` | The pinned surface, holds `startLockTask()`, the always-accessible **Check Location to Unlock** button, the 2×2 shortcut grid, the brightness slider, and the time-based-lock guard that refuses release while the timer is still running |
 | Receiver | `BootReceiver` | Listens for `BOOT_COMPLETED`. If `GeofencePrefs.isKioskActive` is true, re-applies policies + relaunches `KioskActivity` so the kiosk survives reboot |
 | Manifest | `KioskHomeAlias` | Disabled-by-default `<activity-alias>` carrying the HOME intent filter. `LockManager` flips it on when the kiosk takes over and off on release, so unlock hands HOME back to the system launcher |
 | Foreground | `KioskNotificationService` | Minimal `specialUse` FGS — hosts the persistent kiosk notification while `KioskActivity` is alive. Notification has no tap intent, so it can't be used to escape lock task |
 | Policy | `AppDeviceAdminReceiver` | Component registered as Device Owner |
 | Policy | `LockManager` | Wraps `DevicePolicyManager` config — `setLockTaskPackages`, `setLockTaskFeatures`, `KioskHomeAlias` toggle, system-brightness writes, and the `isInLockTask()` check |
-| Storage | `GeofencePrefs` | SharedPreferences: saved boundary triple + a `kiosk_active` flag consulted by `BootReceiver` |
+| Storage | `GeofencePrefs` | SharedPreferences: saved boundary triple, `kiosk_active` flag (read by `BootReceiver`), `time_lock_until_ms` timestamp (read by `KioskActivity` to block release while a time-lock is running) |
 
 What stays available inside kiosk (configured via `setLockTaskFeatures`):
 
@@ -45,6 +45,14 @@ The default dialer is added to the lock-task allowlist so **incoming calls remai
 4. If still inside → toast + on-screen "Still inside boundary by N m"; kiosk stays.
 
 If GPS is off when you tap the button, the kiosk surfaces the standard Play Services "Allow this app to use your location?" system dialog directly on top of itself — tap **OK** and the unlock check retries automatically. If you dismiss the dialog you can still pull the notification shade (allowed by `LOCK_TASK_FEATURE_NOTIFICATIONS`), toggle Location manually, and retry. The dialog is a system overlay so it works inside lock task without whitelisting `com.android.settings`.
+
+### Time-based lock (v1.9.0+)
+
+A second way to engage the kiosk, independent of the geofence. On the main screen, set the hours (1–12) on the time-lock slider and tap **حجب لمدة محددة** to pin the device for that duration — no boundary check is performed, so the lock engages from any location. The **اختبار: حجب لدقيقة** button always locks for 60 seconds, for easy verification.
+
+While the timer is running, tapping **Check Location to Unlock** is refused with a remaining-minutes toast and the kiosk message shows the countdown. When the timer expires, the next unlock tap falls through to the standard location-based flow (release if you're outside the saved boundary). The active-timer timestamp is in `GeofencePrefs` so it survives reboot — `BootReceiver` re-pins the kiosk, and the kiosk continues refusing release until the timer passes.
+
+There is no scheduled job or alarm — the timestamp is only read on demand whenever the user taps a button or `KioskActivity.onResume` runs.
 
 ## Provisioning the app as Device Owner
 
@@ -128,3 +136,4 @@ The committed `debug.keystore` (password `android`) means every CI build signs i
 | 1.7.0 → 1.7.1 | In-place. Security: closes a lock-task escape where a user could redraw the geofence while pinned (kiosk notification → MainActivity → MapActivity → save → unlock). The kiosk notification no longer has a tap intent, and **Set Boundary** / `MapActivity` / `GeofencePrefs.saveBoundary` all refuse to mutate the boundary during lock task. |
 | 1.7.1 → 1.8.0 | In-place. Two regressions fixed: (1) the four exempted-app shortcuts now live directly on the kiosk surface so they remain reachable once pinned (without reopening the boundary-edit attack), and (2) a `BOOT_COMPLETED` receiver re-engages the kiosk after reboot using a persisted `kiosk_active` flag. |
 | 1.8.0 → 1.8.1 | In-place. Adds the brightness slider to `KioskActivity` so screen brightness can be adjusted while pinned. |
+| 1.8.1 → 1.9.0 | In-place. Adds the time-based lock (1–12 h slider + 1-minute test button on `MainActivity`; `KioskActivity` refuses unlock while the timer is running and shows a countdown). The location-based lock and unlock paths are unchanged. |

@@ -144,6 +144,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Time-based lock controls. The hours seek bar + "Lock for N hours"
+         button engage the kiosk regardless of location; the test button
+         engages it for a single minute. While time-lock is active, the
+         kiosk refuses to release until the timer expires. -->
+    <TextView
+        android:id="@+id/tv_hours_status"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:layout_marginTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_boundary_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <SeekBar
+        android:id="@+id/seek_bar_hours"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:max="11"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@id/tv_hours_status"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_time_lock"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="@string/btn_time_lock"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="6dp"
+        app:layout_constraintTop_toBottomOf="@id/seek_bar_hours"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btn_time_lock_test" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_time_lock_test"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="@string/btn_time_lock_test"
+        android:textSize="13sp"
+        android:layout_marginTop="8dp"
+        android:layout_marginStart="6dp"
+        app:layout_constraintTop_toBottomOf="@id/seek_bar_hours"
+        app:layout_constraintStart_toEndOf="@id/btn_time_lock"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- System brightness control. Slider writes Settings.System.SCREEN_BRIGHTNESS
          via Device Owner's setSystemSetting so the change is instant and
          seamless — no Settings page redirect, no user grant flow. -->
@@ -153,7 +202,7 @@
         android:layout_height="wrap_content"
         android:textSize="14sp"
         android:layout_marginTop="24dp"
-        app:layout_constraintTop_toBottomOf="@id/tv_boundary_status"
+        app:layout_constraintTop_toBottomOf="@id/btn_time_lock"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

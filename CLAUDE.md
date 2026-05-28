@@ -22,6 +22,8 @@ Read this before doing any work in this repo.
 
 5. **Verify reachability of the unlock button on every change to `KioskActivity` or its layout.** The user must always be able to tap **Check Location to Unlock** while in kiosk mode. The button must remain visible (anchored to the bottom of the screen), and must not stay disabled across any code path — every location-request callback (success, failure, null, cancellation) must re-enable it.
 
+6. **Preserve all existing user-facing features when adding new ones.** Before editing any file involved in lock, unlock, boundary editing, brightness, the four exempted-app shortcuts (on Main *and* Kiosk), boot persistence, the GPS-off pre-flight dialog, or the HOME-alias toggle, identify which flows the file participates in and confirm they still work after your change. If a refactor would behaviorally alter an existing flow, either keep both paths working or stop and ask. The time-based lock added in v1.9.0 explicitly bypasses the location check, but it must not change the location-based lock or unlock paths.
+
 ## Project facts
 
 - **Target device:** Android, minSdk 26, targetSdk 34

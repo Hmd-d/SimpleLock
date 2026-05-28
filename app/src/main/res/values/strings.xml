@@ -12,6 +12,8 @@
     <string name="btn_open_dialer">Open Phone</string>
     <string name="btn_open_contacts">Open Contacts</string>
     <string name="btn_open_mms">Open Messages</string>
+    <string name="btn_time_lock">حجب لمدة محددة</string>
+    <string name="btn_time_lock_test">اختبار: حجب لدقيقة</string>
 
     <!-- Exempted-app display names (used by the "not installed" toast) -->
     <string name="app_alrajhi">Al Rajhi Retail</string>
@@ -25,6 +27,8 @@
     <string name="status_boundary_unset">Boundary: not set</string>
     <string name="status_boundary_set">Boundary: %1$.5f, %2$.5f (r=%3$.0f m)</string>
     <string name="brightness_status">سطوع الشاشة: %1$d%%</string>
+    <string name="hours_status">ساعات الحجب: %1$d</string>
+    <string name="kiosk_time_locked_message">حجب زمني نشط.\n\nمتبقي %1$d دقيقة.\n\nزر فك الحجب يعمل عند انتهاء المدة.</string>
 
     <!-- Inline status -->
     <string name="checking_gps">Checking GPS…</string>
@@ -45,6 +49,7 @@
     <string name="toast_tap_map_first">Tap the map to choose a center.</string>
     <string name="toast_locked_no_boundary_change">Boundary cannot be changed while the kiosk is active. Unlock first.</string>
     <string name="toast_app_missing">%1$s is not installed.</string>
+    <string name="toast_time_locked">حجب نشط لمدة %1$d دقيقة إضافية.</string>
 
     <!-- Map -->
     <string name="boundary_center">Boundary center</string>

@@ -20,6 +20,7 @@ object GeofencePrefs {
     private const val K_LNG = "geofence_lng"
     private const val K_RADIUS = "geofence_radius_m"
     private const val K_KIOSK_ACTIVE = "kiosk_active"
+    private const val K_TIME_LOCK_UNTIL = "time_lock_until_ms"
 
     private fun prefs(c: Context) =
         c.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -53,6 +54,26 @@ object GeofencePrefs {
 
     fun isKioskActive(c: Context): Boolean =
         prefs(c).getBoolean(K_KIOSK_ACTIVE, false)
+
+    /**
+     * Time-based lock. While `now < timeLockUntil`, KioskActivity refuses
+     * to release regardless of location. When the timestamp passes, the
+     * device falls back to the standard location-based unlock flow
+     * (i.e. the user can press "Check Location to Unlock" and the existing
+     * boundary check decides whether the kiosk releases).
+     *
+     * No scheduled job is needed: the value is only read on demand whenever
+     * the user taps the unlock button.
+     */
+    fun setTimeLockUntil(c: Context, untilMs: Long) {
+        prefs(c).edit().putLong(K_TIME_LOCK_UNTIL, untilMs).apply()
+    }
+
+    fun timeLockUntil(c: Context): Long =
+        prefs(c).getLong(K_TIME_LOCK_UNTIL, 0L)
+
+    fun isTimeLockActive(c: Context): Boolean =
+        System.currentTimeMillis() < timeLockUntil(c)
 
     fun boundary(c: Context): Triple<Double, Double, Float>? {
         val p = prefs(c)

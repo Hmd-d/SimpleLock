@@ -2,7 +2,7 @@ name: Android APK Build
 
 on:
   push:
-    branches: [ claude/add-app-exception-UDFWq ]
+    branches: [ main, claude/add-app-exception-UDFWq ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:

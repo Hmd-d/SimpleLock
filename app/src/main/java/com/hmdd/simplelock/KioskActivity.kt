@@ -137,7 +137,24 @@ class KioskActivity : AppCompatActivity() {
         // Reset transient UI in case we resumed from a phone call etc.
         setChecking(false)
         binding.tvUnlockStatus.text = ""
-        binding.tvKioskMessage.text = getString(R.string.kiosk_message)
+        refreshKioskMessage()
+    }
+
+    /**
+     * Swap the kiosk message in for the time-lock countdown while the timer
+     * is still running, otherwise show the standard "device is locked"
+     * message. Called from onResume — no ticker thread, the user gets a
+     * fresh remaining-minutes count every time they bring the kiosk
+     * forward (open the screen, dismiss a call, etc).
+     */
+    private fun refreshKioskMessage() {
+        val remaining = GeofencePrefs.timeLockUntil(this) - System.currentTimeMillis()
+        binding.tvKioskMessage.text = if (remaining > 0) {
+            val mins = ((remaining + 59_999) / 60_000).toInt()
+            getString(R.string.kiosk_time_locked_message, mins)
+        } else {
+            getString(R.string.kiosk_message)
+        }
     }
 
     override fun onStop() {
@@ -155,6 +172,16 @@ class KioskActivity : AppCompatActivity() {
     // ------------------------------------------------------------------
 
     private fun onCheckUnlockClicked() {
+        // Time-based lock dominates the location check. While the timer is
+        // running, refuse to release no matter where the user is. Refresh
+        // the kiosk message so the displayed countdown stays current.
+        val remaining = GeofencePrefs.timeLockUntil(this) - System.currentTimeMillis()
+        if (remaining > 0) {
+            val mins = ((remaining + 59_999) / 60_000).toInt()
+            toast(getString(R.string.toast_time_locked, mins))
+            refreshKioskMessage()
+            return
+        }
         val boundary = GeofencePrefs.boundary(this)
         if (boundary == null) {
             // No boundary saved → nothing meaningful to compare against.

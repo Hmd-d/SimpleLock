@@ -12,10 +12,11 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Adds the brightness slider to the kiosk surface too so it's
-        // controllable while pinned (was only on MainActivity before).
-        versionCode = 15
-        versionName = "1.8.1"
+        // Adds time-based lock: pin the device for N hours regardless of
+        // location, plus a 1-minute test button. Falls back to the existing
+        // location-based unlock once the timer expires.
+        versionCode = 16
+        versionName = "1.9.0"
     }
 
     // Stable debug signing config so every CI build is update-compatible

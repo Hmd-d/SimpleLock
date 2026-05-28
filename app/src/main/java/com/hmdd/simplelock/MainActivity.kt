@@ -87,7 +87,59 @@ class MainActivity : AppCompatActivity() {
         binding.btnOpenMms.setOnClickListener {
             launchExempted(LockManager.AOSP_MMS_PACKAGE, getString(R.string.app_aosp_mms))
         }
+        setupTimeLockControls()
         setupBrightnessControl()
+    }
+
+    /**
+     * Time-based lock controls. The hours seek bar drives the primary
+     * "Lock for N hours" button (1..12 h); the secondary button always
+     * locks for 60 seconds for easy verification. Both bypass the geofence:
+     * the kiosk pins regardless of current location, and refuses to release
+     * until the saved time-lock timestamp passes.
+     */
+    private fun setupTimeLockControls() {
+        binding.seekBarHours.progress = 0  // → 1 hour
+        binding.tvHoursStatus.text = getString(R.string.hours_status, 1)
+        binding.seekBarHours.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    sb: SeekBar?, progress: Int, fromUser: Boolean
+                ) {
+                    binding.tvHoursStatus.text = getString(R.string.hours_status, progress + 1)
+                }
+                override fun onStartTrackingTouch(sb: SeekBar?) = Unit
+                override fun onStopTrackingTouch(sb: SeekBar?) = Unit
+            }
+        )
+        binding.btnTimeLock.setOnClickListener {
+            val hours = binding.seekBarHours.progress + 1
+            engageTimeLock(hours * 60L * 60L * 1000L)
+        }
+        binding.btnTimeLockTest.setOnClickListener {
+            engageTimeLock(60L * 1000L)
+        }
+    }
+
+    /**
+     * Engages the kiosk for a fixed duration, regardless of current location.
+     * Same hand-off as the boundary-based lock path (apply policies, enable
+     * the HOME alias, set kiosk_active so BootReceiver re-pins after reboot,
+     * launch KioskActivity) — the only difference is the geofence check is
+     * skipped and the time-lock timestamp is written so KioskActivity refuses
+     * to release until it passes.
+     */
+    private fun engageTimeLock(durationMs: Long) {
+        if (!lockManager.isDeviceOwner()) {
+            toast(getString(R.string.toast_not_owner)); return
+        }
+        GeofencePrefs.setTimeLockUntil(this, System.currentTimeMillis() + durationMs)
+        lockManager.applyPolicies()
+        lockManager.setKioskHomeAliasEnabled(true)
+        GeofencePrefs.setKioskActive(this, true)
+        startActivity(Intent(this, KioskActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        })
     }
 
     /**
