@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
             engageTimeLock(hours * 60L * 60L * 1000L)
         }
         binding.btnTimeLockTest.setOnClickListener {
-            engageTimeLock(60L * 1000L)
+            engageTimeLock(5L * 60L * 1000L)
         }
     }
 
@@ -131,18 +131,25 @@ class MainActivity : AppCompatActivity() {
     /**
      * Engages the kiosk for a fixed duration, regardless of current location.
      * Same hand-off as the boundary-based lock path (apply policies, enable
-     * the HOME alias, set kiosk_active so BootReceiver re-pins after reboot,
-     * launch KioskActivity) — the only difference is the geofence check is
-     * skipped and the time-lock timestamp is written so KioskActivity refuses
-     * to release until it passes.
+     * the HOME alias, register persistent HOME so reboot is transparent, set
+     * kiosk_active, launch KioskActivity) — the only difference is the
+     * geofence check is skipped and the time-lock timestamp is written so
+     * KioskActivity refuses to release until it passes.
+     *
+     * Non-shortening: if a longer lock is already running, keep the existing
+     * until-timestamp. The short test button must never cut a real multi-hour
+     * lock short.
      */
     private fun engageTimeLock(durationMs: Long) {
         if (!lockManager.isDeviceOwner()) {
             toast(getString(R.string.toast_not_owner)); return
         }
-        GeofencePrefs.setTimeLockUntil(this, System.currentTimeMillis() + durationMs)
+        val requested = System.currentTimeMillis() + durationMs
+        val existing = GeofencePrefs.timeLockUntil(this)
+        GeofencePrefs.setTimeLockUntil(this, maxOf(existing, requested))
         lockManager.applyPolicies()
         lockManager.setKioskHomeAliasEnabled(true)
+        lockManager.setPersistentHome(true)
         GeofencePrefs.setKioskActive(this, true)
         startActivity(Intent(this, KioskActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -188,6 +195,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Reboot transparency: if the device should be pinned but isn't
+        // (e.g. a boot-time persistent-HOME registration was lost on some
+        // OEM, and the user then opened the app), relaunch the kiosk from
+        // here. We're a foreground activity so there's no BAL restriction.
+        if (GeofencePrefs.isKioskActive(this) && !lockManager.isInLockTask()) {
+            lockManager.applyPolicies()
+            lockManager.setKioskHomeAliasEnabled(true)
+            lockManager.setPersistentHome(true)
+            startActivity(Intent(this, KioskActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            })
+            return
+        }
         refreshUi()
     }
 
@@ -313,6 +333,7 @@ class MainActivity : AppCompatActivity() {
             // Inside → hand off to kiosk. It starts FGS + lock task itself.
             lockManager.applyPolicies()
             lockManager.setKioskHomeAliasEnabled(true)
+            lockManager.setPersistentHome(true)
             GeofencePrefs.setKioskActive(this, true)
             startActivity(Intent(this, KioskActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)

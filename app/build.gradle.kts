@@ -12,10 +12,11 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Raises the time-lock ceiling from 12 h to 168 h (7 days) and
-        // adds a days/hours breakdown in the slider label.
-        versionCode = 17
-        versionName = "1.9.1"
+        // Test button now locks for 5 minutes (was 1) so the user has time to
+        // reboot the device between pressing it and the timer expiring — needed
+        // for end-to-end verification of the v1.9.2 reboot-transparency fix.
+        versionCode = 19
+        versionName = "1.9.3"
     }
 
     // Stable debug signing config so every CI build is update-compatible

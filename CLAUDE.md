@@ -32,6 +32,8 @@ Read this before doing any work in this repo.
 - **Device Owner component:** `com.hmdd.simplelock/.receiver.AppDeviceAdminReceiver`
 - **Architecture:** Manual on-demand. See `README.md` § Architecture.
 
+7. **Reboot must be transparent.** A lock active before a power-cycle must continue to enforce exactly as it did before — the absolute `time_lock_until_ms` timestamp keeps ticking against wall-clock time, and the kiosk must be back on screen as soon as the device finishes booting. The current mechanism (v1.9.2+) registers `KioskHomeAlias` as Device Owner's persistent preferred HOME while pinned, so the *system itself* launches the kiosk on boot — do not rely solely on `BootReceiver.startActivity`, which Android 10+ silently blocks under background-activity-launch rules. Pair every engage path with `LockManager.setPersistentHome(true)` and every release path with `setPersistentHome(false)` (cleared **before** firing the explicit HOME intent so unlock lands on the real launcher).
+
 ## Working notes
 
 - The sandbox blocks `api.github.com` but allows the `github.com` git protocol. Use `git push` over HTTPS with the user's PAT embedded in the remote URL; don't try the REST API.

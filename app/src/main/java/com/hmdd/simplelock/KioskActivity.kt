@@ -271,8 +271,10 @@ class KioskActivity : AppCompatActivity() {
     private fun releaseKiosk() {
         released = true
         if (isInLockTask()) runCatching { stopLockTask() }
-        // Disable our HOME alias BEFORE firing the HOME intent so Android
-        // resolves it to the user's real launcher, not back to us.
+        // Clear persistent-HOME and disable the alias BEFORE firing the HOME
+        // intent so Android resolves it to the user's real launcher, not
+        // back to us. Order matters — both must come off first.
+        lockManager.setPersistentHome(false)
         lockManager.setKioskHomeAliasEnabled(false)
         // Clear the persisted "kiosk active" flag so BootReceiver won't
         // re-pin the device on the next reboot.
