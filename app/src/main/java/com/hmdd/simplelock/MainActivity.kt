@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
             engageTimeLock(hours * 60L * 60L * 1000L)
         }
         binding.btnTimeLockTest.setOnClickListener {
-            engageTimeLock(60L * 1000L)
+            engageTimeLock(5L * 60L * 1000L)
         }
     }
 
@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
      * KioskActivity refuses to release until it passes.
      *
      * Non-shortening: if a longer lock is already running, keep the existing
-     * until-timestamp. The 1-minute test button must never cut a real 12 h
+     * until-timestamp. The short test button must never cut a real multi-hour
      * lock short.
      */
     private fun engageTimeLock(durationMs: Long) {

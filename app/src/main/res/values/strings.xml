@@ -13,7 +13,7 @@
     <string name="btn_open_contacts">Open Contacts</string>
     <string name="btn_open_mms">Open Messages</string>
     <string name="btn_time_lock">حجب لمدة محددة</string>
-    <string name="btn_time_lock_test">اختبار: حجب لدقيقة</string>
+    <string name="btn_time_lock_test">اختبار: حجب لخمس دقائق</string>
 
     <!-- Exempted-app display names (used by the "not installed" toast) -->
     <string name="app_alrajhi">Al Rajhi Retail</string>

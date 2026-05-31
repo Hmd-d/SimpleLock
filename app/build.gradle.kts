@@ -12,13 +12,11 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Reboot-transparency fix: register KioskHomeAlias as Device Owner's
-        // persistent preferred HOME so the kiosk reliably re-engages after a
-        // power cycle (the previous BOOT_COMPLETED startActivity was blocked
-        // by Android 10+ BAL rules). Adds non-shortening guard to engageTimeLock
-        // and an onResume recovery path in MainActivity.
-        versionCode = 18
-        versionName = "1.9.2"
+        // Test button now locks for 5 minutes (was 1) so the user has time to
+        // reboot the device between pressing it and the timer expiring — needed
+        // for end-to-end verification of the v1.9.2 reboot-transparency fix.
+        versionCode = 19
+        versionName = "1.9.3"
     }
 
     // Stable debug signing config so every CI build is update-compatible
