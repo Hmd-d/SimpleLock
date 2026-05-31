@@ -12,10 +12,13 @@ android {
         applicationId = "com.hmdd.simplelock"
         minSdk = 26
         targetSdk = 34
-        // Raises the time-lock ceiling from 12 h to 168 h (7 days) and
-        // adds a days/hours breakdown in the slider label.
-        versionCode = 17
-        versionName = "1.9.1"
+        // Reboot-transparency fix: register KioskHomeAlias as Device Owner's
+        // persistent preferred HOME so the kiosk reliably re-engages after a
+        // power cycle (the previous BOOT_COMPLETED startActivity was blocked
+        // by Android 10+ BAL rules). Adds non-shortening guard to engageTimeLock
+        // and an onResume recovery path in MainActivity.
+        versionCode = 18
+        versionName = "1.9.2"
     }
 
     // Stable debug signing config so every CI build is update-compatible

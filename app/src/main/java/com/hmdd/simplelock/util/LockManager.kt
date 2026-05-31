@@ -3,6 +3,8 @@ package com.hmdd.simplelock.util
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -74,6 +76,33 @@ class LockManager(private val context: Context) {
                     DevicePolicyManager.LOCK_TASK_FEATURE_KEYGUARD
                 )
             dpm.setLockTaskFeatures(admin, features)
+        }
+    }
+
+    /**
+     * Registers (or clears) KioskHomeAlias as Device Owner's persistent
+     * preferred HOME activity. The system itself launches HOME on every
+     * boot, sidestepping the Android 10+ background-activity-launch
+     * restriction that makes a BOOT_COMPLETED startActivity unreliable.
+     * Pair with setKioskHomeAliasEnabled(true) — the alias must be enabled
+     * for the system to be able to resolve to it.
+     */
+    fun setPersistentHome(enabled: Boolean) {
+        if (!isDeviceOwner()) return
+        runCatching {
+            if (enabled) {
+                val filter = IntentFilter(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
+                val alias = ComponentName(
+                    context.packageName,
+                    "${context.packageName}.KioskHomeAlias"
+                )
+                dpm.addPersistentPreferredActivity(admin, filter, alias)
+            } else {
+                dpm.clearPackagePersistentPreferredActivities(admin, context.packageName)
+            }
         }
     }
 

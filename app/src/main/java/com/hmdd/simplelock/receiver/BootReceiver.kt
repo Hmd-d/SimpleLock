@@ -10,19 +10,22 @@ import com.hmdd.simplelock.util.LockManager
 /**
  * Re-engages the kiosk after a reboot. Without this, lock task does NOT
  * survive a power cycle — Android forgets it, and the device boots into
- * the user's normal launcher, defeating the geofence enforcement.
+ * the user's normal launcher, defeating the lock.
  *
- * Flow on BOOT_COMPLETED:
- *   1. Read the persisted "kiosk_active" flag set by MainActivity when the
- *      device was originally pinned (and cleared by releaseKiosk()).
+ * Reboot-transparency strategy:
+ *   1. Read the persisted "kiosk_active" flag set when the device was
+ *      originally pinned (and cleared by releaseKiosk()).
  *   2. If the flag is false → no-op. The user released the kiosk normally
  *      before the reboot, so we should boot into their real launcher.
  *   3. Otherwise re-apply Device Owner policies, re-enable the HOME alias,
- *      and launch KioskActivity. KioskActivity.onResume() then calls
- *      startLockTask() exactly as it does in the normal lock flow.
+ *      and re-assert KioskHomeAlias as the persistent preferred HOME. The
+ *      system itself launches HOME on boot, so the kiosk reappears even
+ *      though the BOOT_COMPLETED startActivity below is blocked by Android
+ *      10+ background-activity-launch rules on most devices. The explicit
+ *      startActivity is kept as a best-effort secondary path.
  *
- * No location work runs here — boot persistence is independent of the
- * manual-on-demand location architecture.
+ * Once KioskActivity is on screen, its onResume() calls startLockTask()
+ * exactly as in the normal lock flow.
  */
 class BootReceiver : BroadcastReceiver() {
 
@@ -33,6 +36,7 @@ class BootReceiver : BroadcastReceiver() {
         val lockManager = LockManager(context)
         lockManager.applyPolicies()
         lockManager.setKioskHomeAliasEnabled(true)
+        lockManager.setPersistentHome(true)
 
         val launch = Intent(context, KioskActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
